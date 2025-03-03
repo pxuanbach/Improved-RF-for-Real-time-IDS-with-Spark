@@ -1,2 +1,2 @@
 infras:
-	docker compose up --scale spark-worker=3 -d
+	docker compose -f ./spark-cluster/docker-compose.yml up --scale spark-worker=3 -d
