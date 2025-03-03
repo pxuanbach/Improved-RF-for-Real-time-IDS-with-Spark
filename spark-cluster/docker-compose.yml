@@ -1,0 +1,56 @@
+services:
+  spark-master:
+    image: bitnami/spark:3.5.1
+    command: bin/spark-class org.apache.spark.deploy.master.Master
+    ports:
+      - "8080:8080"  # Web UI của Spark Master
+      - "7077:7077"  # Port giao tiếp của Spark Master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_HOST=spark-master
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 3G
+    networks:
+      - spark-network
+    volumes:
+      - ../dataset/CICIDS2017:/opt/bitnami/spark/data/cicids2017
+
+  spark-worker:
+    image: bitnami/spark:3.5.1
+    command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=3g  # Giới hạn RAM của Spark Worker
+      - SPARK_WORKER_CORES=1    # Giới hạn số core của Spark Worker
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 3G
+    volumes:
+      - ../dataset/CICIDS2017:/opt/bitnami/spark/data/cicids2017
+    networks:
+      - spark-network
+
+  # jupyter:
+  #   image: jupyter/pyspark-notebook:lab-3.5.1
+  #   ports:
+  #     - "8888:8888"  # Port của Jupyter Notebook
+  #   volumes:
+  #     - ./notebooks:/home/jovyan/work  # Map thư mục local để lưu notebook
+  #   environment:
+  #     - SPARK_MASTER=spark://spark-master:7077
+  #   depends_on:
+  #     - spark-master
+  #   networks:
+  #     - spark-network
+
+networks:
+  spark-network:
+    driver: bridge
