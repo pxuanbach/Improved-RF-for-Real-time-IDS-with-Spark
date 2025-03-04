@@ -1,6 +1,8 @@
 services:
   spark-master:
-    image: bitnami/spark:3.5.1
+    build:
+      context: ./spark
+      dockerfile: Dockerfile
     command: bin/spark-class org.apache.spark.deploy.master.Master
     ports:
       - "8080:8080"  # Web UI của Spark Master
@@ -17,9 +19,13 @@ services:
       - spark-network
     volumes:
       - ../dataset/CICIDS2017:/opt/bitnami/spark/data/cicids2017
+    extra_hosts:
+      - "minio:host-gateway"  # Trỏ minio đến host (Docker Desktop)
 
   spark-worker:
-    image: bitnami/spark:3.5.1
+    build:
+      context: ./spark
+      dockerfile: Dockerfile
     command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
     depends_on:
       - spark-master
@@ -27,14 +33,50 @@ services:
       - SPARK_MODE=worker
       - SPARK_MASTER=spark://spark-master:7077
       - SPARK_WORKER_MEMORY=3g  # Giới hạn RAM của Spark Worker
-      - SPARK_WORKER_CORES=1    # Giới hạn số core của Spark Worker
+      - SPARK_WORKER_CORES=2    # Giới hạn số core của Spark Worker
     deploy:
       resources:
         limits:
-          cpus: '1.0'
+          cpus: '2.0'
           memory: 3G
+    extra_hosts:
+      - "minio:host-gateway"  # Trỏ minio đến host (Docker Desktop)
     volumes:
       - ../dataset/CICIDS2017:/opt/bitnami/spark/data/cicids2017
+    networks:
+      - spark-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000"  # API port
+      - "9090:9090"  # Console port
+    environment:
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=password
+    command: server /data --console-address ":9090"
+    volumes:
+      - ./minio/data:/data  # Lưu trữ dữ liệu MinIO
+      - ../dataset/CICIDS2017:/dataset  # Mount dataset để upload
+    networks:
+      - spark-network
+  
+  minio-mc:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      /usr/bin/mc alias set local http://minio:9000 admin password;
+      /usr/bin/mc mb local/mybucket;
+      /usr/bin/mc anonymous set public local/mybucket;
+      /usr/bin/mc cp /dataset/* local/mybucket/cicids2017/;
+      exit 0;
+      "
+    volumes:
+      - ../dataset/CICIDS2017:/dataset  # Mount thư mục chứa file cần upload
     networks:
       - spark-network
 
