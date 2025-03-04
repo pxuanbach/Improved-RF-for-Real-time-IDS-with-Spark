@@ -5,8 +5,8 @@ services:
       dockerfile: Dockerfile
     command: bin/spark-class org.apache.spark.deploy.master.Master
     ports:
-      - "8080:8080"  # Web UI của Spark Master
-      - "7077:7077"  # Port giao tiếp của Spark Master
+      - "8080:8080"  # Spark Master Web UI 
+      - "7077:7077" 
     environment:
       - SPARK_MODE=master
       - SPARK_MASTER_HOST=spark-master
@@ -14,13 +14,9 @@ services:
       resources:
         limits:
           cpus: '1.0'
-          memory: 3G
+          memory: 2G
     networks:
       - spark-network
-    volumes:
-      - ../dataset/CICIDS2017:/opt/bitnami/spark/data/cicids2017
-    extra_hosts:
-      - "minio:host-gateway"  # Trỏ minio đến host (Docker Desktop)
 
   spark-worker:
     build:
@@ -32,17 +28,13 @@ services:
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER=spark://spark-master:7077
-      - SPARK_WORKER_MEMORY=3g  # Giới hạn RAM của Spark Worker
-      - SPARK_WORKER_CORES=2    # Giới hạn số core của Spark Worker
+      - SPARK_WORKER_MEMORY=4g  
+      - SPARK_WORKER_CORES=2   
     deploy:
       resources:
         limits:
           cpus: '2.0'
-          memory: 3G
-    extra_hosts:
-      - "minio:host-gateway"  # Trỏ minio đến host (Docker Desktop)
-    volumes:
-      - ../dataset/CICIDS2017:/opt/bitnami/spark/data/cicids2017
+          memory: 4G
     networks:
       - spark-network
 
@@ -57,8 +49,7 @@ services:
       - MINIO_ROOT_PASSWORD=password
     command: server /data --console-address ":9090"
     volumes:
-      - ./minio/data:/data  # Lưu trữ dữ liệu MinIO
-      - ../dataset/CICIDS2017:/dataset  # Mount dataset để upload
+      - ./minio/data:/data
     networks:
       - spark-network
   
@@ -76,22 +67,9 @@ services:
       exit 0;
       "
     volumes:
-      - ../dataset/CICIDS2017:/dataset  # Mount thư mục chứa file cần upload
+      - ../dataset/CICIDS2017:/dataset
     networks:
       - spark-network
-
-  # jupyter:
-  #   image: jupyter/pyspark-notebook:lab-3.5.1
-  #   ports:
-  #     - "8888:8888"  # Port của Jupyter Notebook
-  #   volumes:
-  #     - ./notebooks:/home/jovyan/work  # Map thư mục local để lưu notebook
-  #   environment:
-  #     - SPARK_MASTER=spark://spark-master:7077
-  #   depends_on:
-  #     - spark-master
-  #   networks:
-  #     - spark-network
 
 networks:
   spark-network:
