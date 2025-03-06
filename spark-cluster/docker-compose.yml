@@ -28,13 +28,13 @@ services:
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER=spark://spark-master:7077
-      - SPARK_WORKER_MEMORY=4g  
+      - SPARK_WORKER_MEMORY=4608m
       - SPARK_WORKER_CORES=2   
     deploy:
       resources:
         limits:
           cpus: '2.0'
-          memory: 4G
+          memory: 4.5G
     networks:
       - spark-network
 
