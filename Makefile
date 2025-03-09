@@ -1,6 +1,8 @@
+WORKER_COUNT := 3
+
 infras:
 	python scripts/update_hosts.py
-	docker compose -f ./spark-cluster/docker-compose.yml up --scale spark-worker=3 -d
+	docker compose -f ./spark-cluster/docker-compose.yml up --scale spark-worker=$(WORKER_COUNT) -d
 	bash scripts/run_check.sh
 
 infras-b:
