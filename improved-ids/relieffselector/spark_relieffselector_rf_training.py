@@ -68,7 +68,7 @@ volume_files = [
     "s3a://mybucket/cicids2017/Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv",
     "s3a://mybucket/cicids2017/Friday-WorkingHours-Morning.pcap_ISCX.csv",
     "s3a://mybucket/cicids2017/Monday-WorkingHours.pcap_ISCX.csv",
-    "s3a://mybucket/cicids2017/Thursday-WorkingHours-Afternoon-Infiltration.pcap_ISCX.csv",
+    "s3a://mybucket/cicids2017/Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv",
     "s3a://mybucket/cicids2017/Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv",
     "s3a://mybucket/cicids2017/Tuesday-WorkingHours.pcap_ISCX.csv",
     "s3a://mybucket/cicids2017/Wednesday-workingHours.pcap_ISCX.csv",
