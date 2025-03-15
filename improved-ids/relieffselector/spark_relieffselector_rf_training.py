@@ -53,6 +53,11 @@ spark: SparkSession = SparkSession.builder\
     .getOrCreate()
 
 # spark.sparkContext.setLogLevel("INFO")
+local_model_path = "file:///tmp/my_rf_model"
+rf = RandomForestClassifier(featuresCol="features", labelCol="label", numTrees=100, maxDepth=10, seed=42)
+rf_model = rf.fit(train_df)
+rf_model.write().overwrite().save(local_model_path)
+print(f"✅ Model saved locally at {local_model_path}")
 
 volume_files = [
     "s3a://mybucket/cicids2017\Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv",
@@ -112,7 +117,16 @@ print(bcolors.OKBLUE + f"Selected {len(feature_cols)} numeric features" + bcolor
 # Create label index
 from pyspark.ml.feature import StringIndexer
 label_indexer = StringIndexer(inputCol="Label_Category", outputCol="label")
+label_indexer_model = label_indexer.fit(df)
 df = label_indexer.fit(df).transform(df)
+# In ánh xạ
+labels = label_indexer_model.labels
+print(bcolors.OKBLUE + "Mapping of Label_Category to label index:" + bcolors.ENDC)
+for index, label in enumerate(labels):
+    print(f"  - Index {index}: {label}")
+
+# Lưu ánh xạ vào dictionary để dùng sau
+label_to_name = {index: label for index, label in enumerate(labels)}
 
 # Create feature vector
 assembler = VectorAssembler(inputCols=feature_cols, outputCol="features")
@@ -195,6 +209,7 @@ global_weights /= num_splits  # avg weights
 n_global_select = int(len(feature_cols) * selector.getSelectionThreshold())
 global_top_indices = np.argsort(global_weights)[-n_global_select:]
 global_top_features = [feature_cols[idx] for idx in global_top_indices]
+print(f"Selected {len(global_top_features)} features after ReliefF: {global_top_features}")
 global_top_weights = global_weights[global_top_indices]
 print(bcolors.OKGREEN + "Global top features with averaged weights:" + bcolors.ENDC)
 for feature, weight in zip(global_top_features, global_top_weights):
@@ -207,6 +222,7 @@ columns_to_keep = global_top_features + exclude_cols  # keep Label, Label_Catego
 df_reduced = df.select(columns_to_keep)
 
 df_reduced.show(10)
+print(f"Shape of df_reduced: {len(df_reduced.columns)} columns")
 
 # Lưu tập dữ liệu đã chọn đặc trưng dưới dạng Parquet để sử dụng trong test_rf.py
 
@@ -255,6 +271,20 @@ train_df, test_df = df_reduced.randomSplit([0.8, 0.2], seed=42)
 rf = RandomForestClassifier(featuresCol="features", labelCol="label", numTrees=100, maxDepth=10, seed=42)
 rf_model = rf.fit(train_df)
 
+# Đường dẫn để lưu mô hình (có thể là local hoặc S3)
+model_path = "s3a://mybucket/models/random_forest_model"  # Thay đổi đường dẫn nếu cần
+
+# Lưu mô hình
+rf_model.write().overwrite().save(model_path)
+print(bcolors.OKGREEN + f"✅ Model saved to {model_path}" + bcolors.ENDC)
+# Lưu global_top_features và label_to_name
+import json
+spark.createDataFrame([(json.dumps(global_top_features),)], ["features"])\
+    .write.mode("overwrite").text("s3a://mybucket/models/global_top_features")
+spark.createDataFrame([(json.dumps(label_to_name),)], ["labels"])\
+    .write.mode("overwrite").text("s3a://mybucket/models/label_to_name")
+print(bcolors.OKGREEN + "✅ Metadata (features and labels) saved to S3" + bcolors.ENDC)
+
 # 📌 Dự đoán trên tập test
 predictions = rf_model.transform(test_df)
 
@@ -272,10 +302,12 @@ print(f"Length of Precision Array: {len(precision)}")
 # Lấy danh sách nhãn thực tế từ y_validate
 actual_labels = sorted(y_validate["label"].unique())  # Chỉ lấy các nhãn có trong dữ liệu
 print(f"Unique Labels in Data: {actual_labels}")
-
+# Ánh xạ nhãn số về nhãn gốc
+original_labels = [label_to_name[label] for label in actual_labels]
 # Tạo DataFrame với các nhãn thực tế thay vì toàn bộ attack_group.keys()
 df_results = pd.DataFrame({
     'attack': actual_labels,  # ✅ Chỉ lấy nhãn có trong tập dữ liệu
+    'original_label': original_labels,
     'precision': precision,
     'recall': recall,
     'fscore': fscore
@@ -287,7 +319,7 @@ accuracy = accuracy_score(y_validate, y_predicted)
 
 # Hiển thị kết quả
 print(f"\n✅ F1-score: {f1_score:.4f}")
-print(df_results)
+print(df_results.to_string(index=False))
 print(f"\n✅ Precision (macro): {precision_macro:.4f}")
 print(f"✅ Recall (macro): {recall_macro:.4f}")
 print(f"✅ F1-score (macro): {fscore_macro:.4f}")

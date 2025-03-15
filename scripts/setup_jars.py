@@ -8,15 +8,15 @@ import subprocess
 OLD_GUAVA = "guava-14.0.1.jar"
 jars_dir = os.path.join(sys.prefix, "Lib", "site-packages", "pyspark", "jars")
 jar_urls = {
-    "hadoop-aws-3.2.1.jar": "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.2.1/hadoop-aws-3.2.1.jar",
+    "hadoop-aws-3.3.6.jar": "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.6/hadoop-aws-3.3.6.jar",
     "aws-java-sdk-bundle-1.11.1026.jar": "https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.11.1026/aws-java-sdk-bundle-1.11.1026.jar",
-    "guava-27.0-jre.jar": "https://repo1.maven.org/maven2/com/google/guava/guava/27.0-jre/guava-27.0-jre.jar",
-    "hadoop-common-3.2.1.jar": "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-common/3.2.1/hadoop-common-3.2.1.jar",
-    "hadoop-client-3.2.1.jar": "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-client/3.2.1/hadoop-client-3.2.1.jar"
+    "guava-30.1-jre.jar": "https://repo1.maven.org/maven2/com/google/guava/guava/30.1-jre/guava-30.1-jre.jar",
+    "hadoop-common-3.3.6.jar": "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-common/3.3.6/hadoop-common-3.3.6.jar",
+    "hadoop-client-3.3.6.jar": "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-client/3.3.6/hadoop-client-3.3.6.jar"
 }
-HADOOP_VERSION = "3.3.6"
+HADOOP_VERSION = "3.4.0"
 HADOOP_HOME_DEFAULT = os.path.join(os.getcwd(), f"hadoop-{HADOOP_VERSION}")
-WINUTILS_URL = f"https://github.com/cdarlint/winutils/tree/master/hadoop-3.3.6/bin/winutils.exe"
+WINUTILS_URL = f"https://github.com/kontext-tech/winutils/blob/master/hadoop-3.4.0-win10-x64/bin/winutils.exe"
 
 def check_environment():
     """Kiểm tra môi trường hiện tại"""
@@ -37,7 +37,7 @@ def is_hadoop_installed():
         return result.returncode == 0
     except Exception:
         return False
-
+ 
 
 def setup_hadoop_home():
     """Thiết lập HADOOP_HOME và tải winutils.exe nếu cần"""

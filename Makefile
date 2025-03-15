@@ -1,7 +1,7 @@
 WORKER_COUNT := 3
 
 infras:
-	python scripts/update_hosts.py
+	../Python311/python.exe scripts/update_hosts.py
 	docker compose -f ./spark-cluster/docker-compose.yml up --scale spark-worker=$(WORKER_COUNT) -d
 	bash scripts/run_check.sh $(WORKER_COUNT)
 
@@ -15,5 +15,5 @@ stats:
 	docker stats --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.MemPerc}}\t{{.NetIO}}\t{{.BlockIO}}"
 
 install:
-	pip install -r requirements.txt
-	python scripts/setup_jars.py
+	../Python311/python.exe -m pip install -r requirements.txt
+	../Python311/python.exe scripts/setup_jars.py
