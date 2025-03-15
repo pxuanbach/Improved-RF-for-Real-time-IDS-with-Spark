@@ -1,22 +1,37 @@
+import os
 from pyspark.sql import SparkSession
 from pyspark.ml.classification import RandomForestClassificationModel
 from pyspark.ml.feature import VectorAssembler, StringIndexer
 import pandas as pd
-from pyspark.sql.functions import col, when, lit
+from pyspark.sql.functions import col, when, lit, udf, isnan
 from pyspark.sql.types import StringType
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 import json
 
+# Đường dẫn tới thư mục jars
+jars_dir = "/home/lillie/Documents/Study/Improved-RF-for-Real-time-IDS-with-Spark/venv/Lib/site-packages/pyspark/jars"
+
+# Danh sách JAR cần thiết
+jars_list = [
+    "hadoop-aws-3.3.6.jar",
+    "aws-java-sdk-bundle-1.11.1026.jar",
+    "guava-30.1-jre.jar",
+    "hadoop-common-3.3.6.jar",
+    "hadoop-client-3.3.6.jar"
+]
+jars = ",".join([os.path.join(jars_dir, jar) for jar in jars_list])
+
 # Khởi tạo Spark session
-spark = SparkSession.builder\
-    .appName("predict-attack")\
+spark: SparkSession = SparkSession.builder\
+    .appName("pyspark-notebook")\
     .master("spark://127.0.0.1:7077")\
+        .config("spark.jars", jars) \
     .config("spark.driver.host", "host.docker.internal") \
     .config("spark.driver.bindAddress", "0.0.0.0")\
-    .config("spark.driver.memory", "4g") \
-    .config("spark.executor.memory", "2g") \
-    .config("spark.executor.cores", "1") \
-    .config("spark.executor.instances", "2")\
+    .config("spark.driver.memory", "6g") \
+    .config("spark.executor.memory", "4g") \
+    .config("spark.executor.cores", "2") \
+    .config("spark.executor.instances", "3")\
     .config("spark.network.timeout", "800s") \
     .config("spark.driver.maxResultSize", "2g") \
     .config("spark.memory.offHeap.enabled", "true") \
@@ -78,20 +93,27 @@ label_indexer = StringIndexer(inputCol="Label_Category", outputCol="label")
 label_indexer_model = label_indexer.fit(new_df)
 new_df = label_indexer_model.transform(new_df)
 
+# Lấy ánh xạ từ label số về Label_Category (nhãn gốc)
+labels_mapping = label_indexer_model.labels
+label_to_category = {i: label for i, label in enumerate(labels_mapping)}
+
 # Tải global_top_features từ S3
 global_top_features_json = spark.read.text("s3a://mybucket/models/global_top_features").collect()[0]["value"]
 global_top_features = json.loads(global_top_features_json)
 
-# Chuẩn bị dữ liệu mới: tạo vector đặc trưng
-assembler = VectorAssembler(inputCols=global_top_features, outputCol="features")
-new_df_prepared = assembler.transform(new_df).select("features", "label", "Label")
+# Kiểm tra dữ liệu trước khi đưa vào VectorAssembler
+print("Kiểm tra số lượng giá trị NaN hoặc null trong các cột đặc trưng:")
+for feature in global_top_features:
+    nan_count = new_df.filter(col(feature).isNull() | isnan(col(feature).cast("double"))).count()
+    if nan_count > 0:
+        print(f"Cột {feature} có {nan_count} giá trị NaN hoặc null")
+
+# Chuẩn bị dữ liệu mới: tạo vector đặc trưng, bỏ qua hàng chứa NaN
+assembler = VectorAssembler(inputCols=global_top_features, outputCol="features", handleInvalid="skip")
+new_df_prepared = assembler.transform(new_df).select("features", "label", "Label", "Label_Category")
 
 # Dự đoán trên dữ liệu mới
 predictions = loaded_model.transform(new_df_prepared)
-
-# Hiển thị kết quả dự đoán (10 dòng đầu tiên)
-print("Dự đoán trên 10 dòng đầu tiên:")
-predictions.select("Label", "label", "prediction").show(10)
 
 # Tải label_to_name từ S3 để ánh xạ nhãn dự đoán
 label_to_name_json = spark.read.text("s3a://mybucket/models/label_to_name").collect()[0]["value"]
@@ -99,14 +121,21 @@ label_to_name = json.loads(label_to_name_json)
 
 # Ánh xạ prediction thành nhãn gốc
 def map_label(index):
-    return label_to_name.get(index, "unknown")
+    return label_to_name.get(str(int(index)), "unknown")
 
 map_label_udf = udf(map_label, StringType())
 predictions_with_labels = predictions.withColumn("predicted_label", map_label_udf(col("prediction")))
 
-# Hiển thị kết quả với nhãn dự đoán
-print("Kết quả với nhãn dự đoán (10 dòng đầu tiên):")
-predictions_with_labels.select("Label", "label", "prediction", "predicted_label").show(10)
+# Ánh xạ label số về Label_Category (nhãn gốc)
+def map_label_to_category(index):
+    return label_to_category.get(int(index), "unknown")
+
+map_label_to_category_udf = udf(map_label_to_category, StringType())
+predictions_with_labels = predictions_with_labels.withColumn("actual_label", map_label_to_category_udf(col("label")))
+
+# Hiển thị kết quả với nhãn gốc và nhãn dự đoán
+print("Kết quả dự đoán (10 dòng đầu tiên):")
+predictions_with_labels.select("Label", "actual_label", "predicted_label").show(10)
 
 # Đánh giá độ chính xác của mô hình
 y_validate = predictions_with_labels.select("label").toPandas()
@@ -117,7 +146,7 @@ actual_labels = sorted(y_validate["label"].unique())
 print(f"Unique Labels in Data: {actual_labels}")
 
 # Ánh xạ nhãn số về nhãn gốc
-original_labels = [label_to_name[label] for label in actual_labels]
+original_labels = [label_to_name.get(str(int(label)), "unknown") for label in actual_labels]
 
 # Tạo DataFrame kết quả
 df_results = pd.DataFrame({
@@ -139,6 +168,9 @@ print(f"✅ Recall (macro): {recall_macro:.4f}")
 print(f"✅ F1-score (macro): {fscore_macro:.4f}")
 print(f"✅ Accuracy: {accuracy:.4f}")
 
-# Lưu kết quả dự đoán nếu cần
+# Lưu kết quả dự đoán
 predictions_with_labels.write.mode("overwrite").parquet("s3a://mybucket/predictions/predicted_results.parquet")
 print("✅ Predictions saved to S3")
+
+# Dừng SparkSession
+spark.stop()

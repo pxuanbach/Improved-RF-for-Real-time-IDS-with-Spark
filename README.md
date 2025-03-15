@@ -16,3 +16,13 @@ Ensure you have the following installed before proceeding:
 make install
 make infras
 ```
+Linux comand: 
+```
+pyenv versions
+pyenv local 3.11.9
+python -m venv venv
+source venv/bin/activate
+
+make install
+make infras
+```

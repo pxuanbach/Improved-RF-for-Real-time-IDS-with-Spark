@@ -23,17 +23,28 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+jars_dir = "/home/lillie/Documents/Study/Improved-RF-for-Real-time-IDS-with-Spark/venv/Lib/site-packages/pyspark/jars"
 
+# Danh sách JAR cần thiết
+jars_list = [
+    "hadoop-aws-3.3.6.jar",
+    "aws-java-sdk-bundle-1.11.1026.jar",
+    "guava-30.1-jre.jar",
+    "hadoop-common-3.3.6.jar",
+    "hadoop-client-3.3.6.jar"
+]
+jars = ",".join([os.path.join(jars_dir, jar) for jar in jars_list])
 # Khởi tạo Spark session
 spark: SparkSession = SparkSession.builder\
     .appName("pyspark-notebook")\
     .master("spark://127.0.0.1:7077")\
+        .config("spark.jars", jars) \
     .config("spark.driver.host", "host.docker.internal") \
     .config("spark.driver.bindAddress", "0.0.0.0")\
-    .config("spark.driver.memory", "4g") \
-    .config("spark.executor.memory", "2g") \
-    .config("spark.executor.cores", "1") \
-    .config("spark.executor.instances", "2")\
+    .config("spark.driver.memory", "6g") \
+    .config("spark.executor.memory", "4g") \
+    .config("spark.executor.cores", "2") \
+    .config("spark.executor.instances", "3")\
     .config("spark.network.timeout", "800s") \
     .config("spark.driver.maxResultSize", "2g") \
     .config("spark.memory.offHeap.enabled", "true") \
@@ -52,18 +63,16 @@ spark: SparkSession = SparkSession.builder\
     .config("spark.hadoop.fs.s3a.attempts.maximum", "0") \
     .getOrCreate()
 
-# spark.sparkContext.setLogLevel("INFO")
-local_model_path = "file:///tmp/my_rf_model"
-rf = RandomForestClassifier(featuresCol="features", labelCol="label", numTrees=100, maxDepth=10, seed=42)
-rf_model = rf.fit(train_df)
-rf_model.write().overwrite().save(local_model_path)
-print(f"✅ Model saved locally at {local_model_path}")
-
 volume_files = [
-    "s3a://mybucket/cicids2017\Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv",
-    # "s3a://mybucket/cicids2017\Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv",
+    "s3a://mybucket/cicids2017/Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv",
+    "s3a://mybucket/cicids2017/Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv",
+    "s3a://mybucket/cicids2017/Friday-WorkingHours-Morning.pcap_ISCX.csv",
+    "s3a://mybucket/cicids2017/Monday-WorkingHours.pcap_ISCX.csv",
+    "s3a://mybucket/cicids2017/Thursday-WorkingHours-Afternoon-Infiltration.pcap_ISCX.csv",
+    "s3a://mybucket/cicids2017/Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv",
+    "s3a://mybucket/cicids2017/Tuesday-WorkingHours.pcap_ISCX.csv",
+    "s3a://mybucket/cicids2017/Wednesday-workingHours.pcap_ISCX.csv",
 ]
-
 df = spark.read \
     .option("nullValue", "NA") \
     .option("emptyValue", "unknown") \
@@ -324,3 +333,5 @@ print(f"\n✅ Precision (macro): {precision_macro:.4f}")
 print(f"✅ Recall (macro): {recall_macro:.4f}")
 print(f"✅ F1-score (macro): {fscore_macro:.4f}")
 print(f"✅ Accuracy: {accuracy:.4f}")
+# Dừng SparkSession
+spark.stop()
