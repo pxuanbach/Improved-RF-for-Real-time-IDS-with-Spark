@@ -45,11 +45,12 @@ spark: SparkSession = SparkSession.builder\
     .config("spark.executor.memory", "4g") \
     .config("spark.executor.cores", "2") \
     .config("spark.executor.instances", "3")\
-    .config("spark.network.timeout", "800s") \
+    .config("spark.network.timeout", "1200s") \
     .config("spark.driver.maxResultSize", "2g") \
     .config("spark.memory.offHeap.enabled", "true") \
     .config("spark.memory.offHeap.size", "2g") \
-    .config("spark.default.parallelism", "24") \
+    .config("spark.shuffle.file.buffer", "2048k") \
+    .config("spark.default.parallelism", "4") \
     .config("spark.shuffle.io.maxRetries", "10") \
     .config("spark.shuffle.io.retryWait", "60s") \
     .config("spark.hadoop.fs.s3a.block.size", "33554432") \
@@ -60,7 +61,9 @@ spark: SparkSession = SparkSession.builder\
     .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false")\
     .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
     .config("spark.hadoop.fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider") \
-    .config("spark.hadoop.fs.s3a.attempts.maximum", "0") \
+    .config("spark.hadoop.fs.s3a.attempts.maximum", "1") \
+    .config("spark.shuffle.reduceLocality.enabled", "false") \
+    .config("spark.shuffle.service.enabled", "true") \
     .getOrCreate()
 
 volume_files = [
@@ -77,7 +80,7 @@ df = spark.read \
     .option("nullValue", "NA") \
     .option("emptyValue", "unknown") \
     .csv(volume_files, header=True, inferSchema=True) \
-    .repartition(16)
+    .repartition(18)
 
 df = df.withColumnRenamed(' Label', 'Label')
 
@@ -152,7 +155,7 @@ def calculate_number_of_subsets(spark_df, max_records=15000):
 
 
 # Split the DataFrame into parts (e.g., 3 splits)
-num_splits = calculate_number_of_subsets(df_vector, max_records=15000)
+num_splits = calculate_number_of_subsets(df_vector, max_records=15000) # base 15000
 split_weights = [1.0 / num_splits] * num_splits
 df_splits = df_vector.randomSplit(split_weights, seed=42)
 

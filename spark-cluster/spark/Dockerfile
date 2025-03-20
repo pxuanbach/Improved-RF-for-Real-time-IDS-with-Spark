@@ -21,6 +21,17 @@ RUN rm -f /opt/bitnami/spark/jars/guava-14.0.1.jar && \
     rm -f /opt/bitnami/spark/jars/guava-27.0-jre.jar && \
     wget -q https://repo1.maven.org/maven2/com/google/guava/guava/30.1-jre/guava-30.1-jre.jar -O /opt/bitnami/spark/jars/guava-30.1-jre.jar
 
+# Configure External Shuffle Service
+RUN echo "SPARK_SHUFFLE_SERVICE_ENABLED=true" >> /opt/bitnami/spark/conf/spark-env.sh && \
+    echo "SPARK_SHUFFLE_SERVICE_PORT=7337" >> /opt/bitnami/spark/conf/spark-env.sh && \
+    chmod +x /opt/bitnami/spark/conf/spark-env.sh
+    RUN echo "spark.shuffle.service.enabled true" >> /opt/bitnami/spark/conf/spark-defaults.conf && \
+    echo "spark.shuffle.service.port 7337" >> /opt/bitnami/spark/conf/spark-defaults.conf && \
+    echo "spark.dynamicAllocation.enabled true" >> /opt/bitnami/spark/conf/spark-defaults.conf && \
+    echo "spark.dynamicAllocation.shuffleTracking.enabled true" >> /opt/bitnami/spark/conf/spark-defaults.conf && \
+    echo "spark.dynamicAllocation.minExecutors 1" >> /opt/bitnami/spark/conf/spark-defaults.conf && \
+    echo "spark.dynamicAllocation.maxExecutors 3" >> /opt/bitnami/spark/conf/spark-defaults.conf
+
 COPY minio_is_ready.sh /opt/bitnami/spark/minio_is_ready.sh
 RUN chmod +x /opt/bitnami/spark/minio_is_ready.sh
 

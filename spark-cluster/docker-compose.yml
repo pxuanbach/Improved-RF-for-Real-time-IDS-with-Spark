@@ -24,7 +24,9 @@ services:
     build:
       context: ./spark
       dockerfile: Dockerfile
-    command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    command: 
+      sh -c "bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077 &
+            bin/spark-class org.apache.spark.deploy.ExternalShuffleService"
     depends_on:
       - spark-master
     environment:
@@ -48,6 +50,7 @@ services:
     ports:
       - "9000:9000"  # API port
       - "9090:9090"  # Console port
+
     environment:
       - MINIO_ROOT_USER=admin
       - MINIO_ROOT_PASSWORD=password
