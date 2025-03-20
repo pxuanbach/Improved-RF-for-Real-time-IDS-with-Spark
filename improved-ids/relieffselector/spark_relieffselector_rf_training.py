@@ -10,22 +10,19 @@ from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 
 from relieffselector import ReliefFSelector
+from utils import save_checkpoint, clear_checkpoint, load_checkpoint, bcolors
 import os
+import signal
+import json
+import sys
+
 print("Running on:", os.name)  # 'posix' nếu là Linux (container), 'nt' nếu là Windows
 print("Current working directory:", os.getcwd())
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-jars_dir = "/home/lillie/Documents/Study/Improved-RF-for-Real-time-IDS-with-Spark/venv/Lib/site-packages/pyspark/jars"
 
-# Danh sách JAR cần thiết
+jars_dir = os.getcwd() + "/venv/Lib/site-packages/pyspark/jars"
+print(jars_dir)
+
+# # Danh sách JAR cần thiết
 jars_list = [
     "hadoop-aws-3.3.6.jar",
     "aws-java-sdk-bundle-1.11.1026.jar",
@@ -38,13 +35,12 @@ jars = ",".join([os.path.join(jars_dir, jar) for jar in jars_list])
 spark: SparkSession = SparkSession.builder\
     .appName("pyspark-notebook")\
     .master("spark://127.0.0.1:7077")\
-        .config("spark.jars", jars) \
     .config("spark.driver.host", "host.docker.internal") \
     .config("spark.driver.bindAddress", "0.0.0.0")\
-    .config("spark.driver.memory", "6g") \
+    .config("spark.driver.memory", "4g") \
     .config("spark.executor.memory", "4g") \
     .config("spark.executor.cores", "2") \
-    .config("spark.executor.instances", "3")\
+    .config("spark.executor.instances", "2")\
     .config("spark.network.timeout", "800s") \
     .config("spark.driver.maxResultSize", "2g") \
     .config("spark.memory.offHeap.enabled", "true") \
@@ -73,6 +69,9 @@ volume_files = [
     "s3a://mybucket/cicids2017/Tuesday-WorkingHours.pcap_ISCX.csv",
     "s3a://mybucket/cicids2017/Wednesday-workingHours.pcap_ISCX.csv",
 ]
+
+print("Start")
+
 df = spark.read \
     .option("nullValue", "NA") \
     .option("emptyValue", "unknown") \
@@ -85,9 +84,11 @@ df = df.replace(['Heartbleed', 'Web Attack � Sql Injection', 'Infiltration'], 
 df = df.dropna(how='any')
 
 # Replace 'Web Attack � Brute Force' with 'Brute Force'
+print("Replace 'Web Attack � Brute Force' with 'Brute Force'")
 df = df.withColumn('Label', when(col('Label') == 'Web Attack � Brute Force', 'Brute Force').otherwise(col('Label')))
 
 # Replace 'Web Attack � XSS' with 'XSS'
+print("Replace 'Web Attack � XSS' with 'XSS'")
 df = df.withColumn('Label', when(col('Label') == 'Web Attack � XSS', 'XSS').otherwise(col('Label')))
 
 df = df.withColumn('Attack', when(col('Label') == 'BENIGN', 0).otherwise(1))
@@ -141,8 +142,6 @@ label_to_name = {index: label for index, label in enumerate(labels)}
 assembler = VectorAssembler(inputCols=feature_cols, outputCol="features")
 df_vector = assembler.transform(df).select("features", "label")
 
-# print(df_vector.count())
-
 def calculate_number_of_subsets(spark_df, max_records=15000):
     total_records = spark_df.count()
     
@@ -157,6 +156,23 @@ split_weights = [1.0 / num_splits] * num_splits
 df_splits = df_vector.randomSplit(split_weights, seed=42)
 
 
+# Signal handler for graceful shutdown
+def signal_handler(signum, frame):
+    print(bcolors.WARNING + "\nInterrupt received, saving checkpoint..." + bcolors.ENDC)
+    if 'current_split' in globals() and 'top_features_per_split' in globals():
+        save_checkpoint(current_split, top_features_per_split)
+    sys.exit(0)
+
+# Register signal handler
+signal.signal(signal.SIGINT, signal_handler)
+
+# Load previous checkpoint if exists
+last_split, top_features_per_split = load_checkpoint()
+if last_split >= 0:
+    print(bcolors.OKBLUE + f"Resuming from split {last_split + 1}" + bcolors.ENDC)
+else:
+    top_features_per_split = []
+
 # Now run ReliefFSelector
 selector = (
     ReliefFSelector()
@@ -166,39 +182,53 @@ selector = (
 )
 
 # Process each split and collect top features
-top_features_per_split = []
 total_time = 0.0
-for i, df_split in enumerate(df_splits):
-    start_time = time.time()
-    total_instances = df_split.count()
-    print(bcolors.HEADER + f"Processing split {i + 1}/{num_splits} with {total_instances} instances" + bcolors.ENDC)
-    
-    # Fit the model on the split
-    model = selector.fit(df_split)
-    
-    # Extract weights from the model
-    weights = model.weights  # Assuming ReliefFSelectorModel exposes weights
-    n_select = int(len(weights) * selector.getSelectionThreshold())
-    selected_indices = np.argsort(weights)[-n_select:]  # Top feature indices
-    
-    # Map indices to feature names
-    selected_features = [feature_cols[idx] for idx in selected_indices]
-    top_features_per_split.append((i, selected_features, weights[selected_indices]))
-    
-    # Transform the split
-    # selected_df = model.transform(df_split)
-    print(bcolors.OKGREEN + f"Split {i + 1}: Top {len(selected_features)} features: {selected_features}" + bcolors.ENDC)
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    print(bcolors.OKCYAN + f"Elapsed time for split {i + 1}: {elapsed_time:.4f} seconds" + bcolors.ENDC)
-    
-    df_split.unpersist(blocking=True)  # Clear cache immediately
-    spark.sparkContext._jvm.System.gc()  # Suggest garbage collection
+try:
+    for i, df_split in enumerate(df_splits):
+        if i <= last_split:
+            continue
+            
+        current_split = i  # For signal handler
+        start_time = time.time()
+        total_instances = df_split.count()
+        print(bcolors.HEADER + f"Processing split {i + 1}/{num_splits} with {total_instances} instances" + bcolors.ENDC)
+        
+        # Fit the model on the split
+        model = selector.fit(df_split)
+        
+        # Extract weights from the model
+        weights = model.weights
+        n_select = int(len(weights) * selector.getSelectionThreshold())
+        selected_indices = np.argsort(weights)[-n_select:]
+        
+        # Map indices to feature names and convert weights to list for JSON serialization
+        selected_features = [feature_cols[idx] for idx in selected_indices]
+        selected_weights = weights[selected_indices].tolist()  # Convert numpy array to list
+        top_features_per_split.append((i, selected_features, selected_weights))
+        
+        print(bcolors.OKGREEN + f"Split {i + 1}: Top {len(selected_features)} features: {selected_features}" + bcolors.ENDC)
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        print(bcolors.OKCYAN + f"Elapsed time for split {i + 1}: {elapsed_time:.4f} seconds" + bcolors.ENDC)
+        
+        # Save checkpoint after each split
+        save_checkpoint(i, top_features_per_split)
+        
+        df_split.unpersist(blocking=True)
+        spark.sparkContext._jvm.System.gc()
+        
+        print(bcolors.OKCYAN + f"Released resources for split {i + 1}" + bcolors.ENDC)
+        total_time += elapsed_time
 
-    print(bcolors.OKCYAN + f"Released resources for split {i + 1}" + bcolors.ENDC)
-    total_time += elapsed_time
+    # Clear checkpoint after successful completion
+    clear_checkpoint()
+    
+except Exception as e:
+    print(bcolors.FAIL + f"Error occurred: {str(e)}" + bcolors.ENDC)
+    save_checkpoint(current_split, top_features_per_split)
+    raise e
 
-print(bcolors.WARNING + f"Total elapsed time for {num_splits} splits: {total_time:.4f} seconds" + bcolors.ENDC)
+print(bcolors.WARNING + f"Total elapsed time for processed splits: {total_time:.4f} seconds" + bcolors.ENDC)
 
 # Combine top features (example: union of all selected features)
 all_top_features = set()
@@ -234,12 +264,6 @@ df_reduced.show(10)
 print(f"Shape of df_reduced: {len(df_reduced.columns)} columns")
 
 # Lưu tập dữ liệu đã chọn đặc trưng dưới dạng Parquet để sử dụng trong test_rf.py
-
-# df_reduced.write.mode("overwrite").parquet("selected_features_test.parquet")
-
-# print(f"✅ [TEST MODE] Selected features dataset saved to ")
-
-
 
 
 from pyspark.sql.functions import isnan, isnull, when

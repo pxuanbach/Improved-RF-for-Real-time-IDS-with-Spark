@@ -250,7 +250,7 @@ class ReliefFSelector(Estimator, HasFeaturesCol, HasOutputCol, HasLabelCol,
             total_weights /= total_instance_count
 
         # Clean up resources
-        if self.getUseCache():
+        if not self.getUseCache():
             data_rdd.unpersist(blocking=True)
             min_max_rdd.unpersist(blocking=True)
         weights_rdd.unpersist(blocking=True)

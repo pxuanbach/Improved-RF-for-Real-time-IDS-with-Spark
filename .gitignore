@@ -172,3 +172,4 @@ cython_debug/
 
 *.csv
 spark-cluster/minio/data/*
+checkpoints/

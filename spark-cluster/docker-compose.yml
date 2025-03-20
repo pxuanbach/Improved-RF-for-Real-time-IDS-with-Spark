@@ -56,6 +56,11 @@ services:
       - ./minio/data:/data
     networks:
       - spark-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
   
   minio-mc:
     image: minio/mc
