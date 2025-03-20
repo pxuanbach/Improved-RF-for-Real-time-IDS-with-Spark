@@ -7,7 +7,6 @@ from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 import pandas as pd
 import json
 import os
-import random
 
 class bcolors:
     HEADER = '\033[95m'
@@ -62,7 +61,7 @@ spark: SparkSession = SparkSession.builder\
     .config("spark.shuffle.service.enabled", "true") \
     .getOrCreate()
 
-# Load dữ liệu từ 8 file
+# Load dữ liệu từ file CSV (chỉ lấy 1 file để test)
 volume_files = [
     "s3a://mybucket/cicids2017/Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv",
     # "s3a://mybucket/cicids2017/Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv",
@@ -77,16 +76,24 @@ volume_files = [
 df = spark.read \
     .option("nullValue", "NA") \
     .option("emptyValue", "unknown") \
-    .csv(volume_files, header=True, inferSchema=True) \
-    .repartition(24)
+    .csv(volume_files, header=True, inferSchema=True)
+
+# Lấy ngẫu nhiên 50 bản ghi để test
+sample_size = 50  # Lấy 50 bản ghi ngẫu nhiên
+total_records = df.count()
+if total_records > sample_size:
+    df_sample = df.sample(False, sample_size / total_records, seed=42)
+else:
+    df_sample = df
+print(bcolors.OKGREEN + f"✅ Sampled {df_sample.count()} records for detection" + bcolors.ENDC)
 
 # Tiền xử lý dữ liệu
-df = df.withColumnRenamed(' Label', 'Label')
-df = df.replace(['Heartbleed', 'Web Attack � Sql Injection', 'Infiltration'], None, subset=['Label'])
-df = df.dropna(how='any')
-df = df.withColumn('Label', when(col('Label') == 'Web Attack � Brute Force', 'Brute Force').otherwise(col('Label')))
-df = df.withColumn('Label', when(col('Label') == 'Web Attack � XSS', 'XSS').otherwise(col('Label')))
-df = df.withColumn('Attack', when(col('Label') == 'BENIGN', 0).otherwise(1))
+df_sample = df_sample.withColumnRenamed(' Label', 'Label')
+df_sample = df_sample.replace(['Heartbleed', 'Web Attack � Sql Injection', 'Infiltration'], None, subset=['Label'])
+df_sample = df_sample.dropna(how='any')
+df_sample = df_sample.withColumn('Label', when(col('Label') == 'Web Attack � Brute Force', 'Brute Force').otherwise(col('Label')))
+df_sample = df_sample.withColumn('Label', when(col('Label') == 'Web Attack � XSS', 'XSS').otherwise(col('Label')))
+df_sample = df_sample.withColumn('Attack', when(col('Label') == 'BENIGN', 0).otherwise(1))
 
 attack_group = {
     'BENIGN': 'benign', 
@@ -104,14 +111,9 @@ attack_group = {
 }
 
 conditions = [when(col('Label') == k, lit(v)) for k, v in attack_group.items()]
-df = df.withColumn('Label_Category', conditions[0])
+df_sample = df_sample.withColumn('Label_Category', conditions[0])
 for condition in conditions[1:]:
-    df = df.withColumn('Label_Category', when(col('Label_Category').isNull(), condition).otherwise(col('Label_Category')))
-
-# Tạo index cho nhãn
-label_indexer = StringIndexer(inputCol="Label_Category", outputCol="label")
-label_indexer_model = label_indexer.fit(df)
-df = label_indexer_model.transform(df)
+    df_sample = df_sample.withColumn('Label_Category', when(col('Label_Category').isNull(), condition).otherwise(col('Label_Category')))
 
 # Load global_top_features và label_to_name
 global_top_features_json = spark.read.text("s3a://mybucket/models/global_top_features").collect()[0]["value"]
@@ -124,14 +126,10 @@ print(bcolors.OKGREEN + "✅ Loaded label mapping:" + bcolors.ENDC)
 for index, label in label_to_name.items():
     print(f"  - Index {index}: {label}")
 
-# Lấy một lượng nhỏ dữ liệu ngẫu nhiên (ví dụ: 10,000 bản ghi)
-sample_size = 10000  # Có thể điều chỉnh
-total_records = df.count()
-if total_records > sample_size:
-    df_sample = df.sample(False, sample_size / total_records, seed=42)
-else:
-    df_sample = df
-print(bcolors.OKGREEN + f"✅ Sampled {df_sample.count()} records for detection" + bcolors.ENDC)
+# Tạo index cho nhãn
+label_indexer = StringIndexer(inputCol="Label_Category", outputCol="label")
+label_indexer_model = label_indexer.fit(df_sample)
+df_sample = label_indexer_model.transform(df_sample)
 
 # Giảm chiều dữ liệu với global_top_features
 exclude_cols = ['Label', 'Label_Category', 'Attack']
@@ -173,11 +171,12 @@ map_label_to_category_udf = udf(map_label_to_category, StringType())
 predictions_with_labels = predictions.withColumn("actual_label", map_label_to_category_udf(col("label")))
 predictions_with_labels = predictions_with_labels.withColumn("predicted_label", map_label_to_category_udf(col("prediction")))
 
-# Hiển thị kết quả dự đoán (Top 10 rows)
-print(bcolors.HEADER + "Prediction Results (Top 10 rows):" + bcolors.ENDC)
-predictions_with_labels.select("Label", "actual_label", "predicted_label").show(10)
+# Hiển thị kết quả dự đoán (toàn bộ sample)
+print(bcolors.HEADER + f"Prediction Results ({df_sample.count()} rows):" + bcolors.ENDC)
+predictions_with_labels.select("Label", "actual_label", "predicted_label").show(int(df_sample.count()))
 
 # Đánh giá mô hình
+from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 evaluator = MulticlassClassificationEvaluator(labelCol="label", predictionCol="prediction", metricName="f1")
 f1_score = evaluator.evaluate(predictions)
 
