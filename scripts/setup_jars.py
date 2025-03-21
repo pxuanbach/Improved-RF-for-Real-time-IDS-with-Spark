@@ -14,22 +14,22 @@ jar_urls = {
     "hadoop-common-3.3.6.jar": "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-common/3.3.6/hadoop-common-3.3.6.jar",
     "hadoop-client-3.3.6.jar": "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-client/3.3.6/hadoop-client-3.3.6.jar"
 }
-HADOOP_VERSION = "3.4.0"
+HADOOP_VERSION = "3.2.0"
 HADOOP_HOME_DEFAULT = os.path.join(os.getcwd(), f"hadoop-{HADOOP_VERSION}")
-WINUTILS_URL = f"https://github.com/kontext-tech/winutils/blob/master/hadoop-3.4.0-win10-x64/bin/winutils.exe"
+WINUTILS_URL = f"https://github.com/kontext-tech/winutils/blob/master/hadoop-{HADOOP_VERSION}-win10-x64/bin/winutils.exe"
 
 def check_environment():
     """Kiểm tra môi trường hiện tại"""
     print("🔍 Kiểm tra môi trường:")
     print(f"- Hệ điều hành: {os.name}")  # 'posix' cho Linux, 'nt' cho Windows
     print(f"- Thư mục hiện tại: {os.getcwd()}")
-    
+
     hadoop_home = os.environ.get("HADOOP_HOME")
     if hadoop_home and os.path.exists(hadoop_home):
         print(f"✅ HADOOP_HOME hiện tại: {hadoop_home}")
     else:
         print(f"⚠️ HADOOP_HOME chưa được thiết lập")
-        
+
 def is_hadoop_installed():
     """Kiểm tra xem Hadoop đã được cài trên Windows chưa"""
     try:
@@ -37,7 +37,7 @@ def is_hadoop_installed():
         return result.returncode == 0
     except Exception:
         return False
- 
+
 
 def setup_hadoop_home():
     """Thiết lập HADOOP_HOME và tải winutils.exe nếu cần"""
@@ -73,14 +73,14 @@ def setup_hadoop_home():
     # Cập nhật biến môi trường trong session hiện tại
     os.environ["HADOOP_HOME"] = HADOOP_HOME_DEFAULT
     os.environ["PATH"] = f"{HADOOP_HOME_DEFAULT}\\bin;{os.environ['PATH']}"
-    
+
     # Thiết lập biến môi trường vĩnh viễn trong Windows
     subprocess.run(["setx", "HADOOP_HOME", HADOOP_HOME_DEFAULT], shell=True)
     subprocess.run(["setx", "PATH", f"{HADOOP_HOME_DEFAULT}\\bin;%PATH%"], shell=True)
 
     print(f"✅ Đã thiết lập HADOOP_HOME vĩnh viễn = {HADOOP_HOME_DEFAULT}")
     print(f"⚠️ Bạn cần **khởi động lại terminal** để biến môi trường có hiệu lực!")
-    
+
 def remove_old_guava(jars_dir):
     old_guava_path = os.path.join(jars_dir, OLD_GUAVA)
     if os.path.exists(old_guava_path):
@@ -105,20 +105,20 @@ def download_jars(jars_dir):
             print(f"Downloaded {jar_name} to {jar_path}")
         else:
             print(f"{jar_name} already exists at {jar_path}")
-        
+
         time.sleep(1)
 
 if __name__ == "__main__":
     # Kiểm tra môi trường
     check_environment()
-    
+
     # Thiết lập HADOOP_HOME và winutils.exe
     setup_hadoop_home()
-    
+
     # Xóa guava cũ và tải các JAR
     remove_old_guava(jars_dir)
     download_jars(jars_dir)
-    
+
     # Xác nhận lại môi trường sau khi thiết lập
     print("\nXác nhận môi trường sau khi thiết lập:")
     check_environment()

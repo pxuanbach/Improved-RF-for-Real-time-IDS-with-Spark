@@ -10,7 +10,7 @@ from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 
 from relieffselector import ReliefFSelector
-from utils import save_checkpoint, clear_checkpoint, load_checkpoint, bcolors
+from modules.utils import save_checkpoint, clear_checkpoint, load_checkpoint, bcolors
 import os
 import signal
 import json
@@ -94,17 +94,17 @@ df = df.withColumn('Label', when(col('Label') == 'Web Attack � XSS', 'XSS').ot
 df = df.withColumn('Attack', when(col('Label') == 'BENIGN', 0).otherwise(1))
 
 attack_group = {
-    'BENIGN': 'benign', 
+    'BENIGN': 'benign',
     'DoS Hulk': 'dos',
-    'PortScan': 'probe', 
+    'PortScan': 'probe',
     'DDoS': 'ddos',
-    'DoS GoldenEye': 'dos', 
+    'DoS GoldenEye': 'dos',
     'FTP-Patator': 'brute_force',
-    'SSH-Patator': 'brute_force', 
-    'DoS slowloris': 'dos', 
+    'SSH-Patator': 'brute_force',
+    'DoS slowloris': 'dos',
     'DoS Slowhttptest': 'dos',
     'Bot': 'botnet',
-    'Brute Force': 'web_attack', 
+    'Brute Force': 'web_attack',
     'XSS': 'web_attack'
 }
 
@@ -117,7 +117,7 @@ for condition in conditions[1:]:  # Chain the rest
 
 # Get numeric columns only and exclude label columns
 exclude_cols = ['Label', 'Label_Category', 'Attack']
-feature_cols = [col_name for col_name in df.columns 
+feature_cols = [col_name for col_name in df.columns
                if col_name not in exclude_cols
                and df.schema[col_name].dataType.typeName() in ('double', 'integer', 'float')]
 
@@ -144,9 +144,9 @@ df_vector = assembler.transform(df).select("features", "label")
 
 def calculate_number_of_subsets(spark_df, max_records=15000):
     total_records = spark_df.count()
-    
+
     num_subsets = (total_records + max_records - 1) // max_records
-    
+
     return num_subsets
 
 
@@ -187,42 +187,42 @@ try:
     for i, df_split in enumerate(df_splits):
         if i <= last_split:
             continue
-            
+
         current_split = i  # For signal handler
         start_time = time.time()
         total_instances = df_split.count()
         print(bcolors.HEADER + f"Processing split {i + 1}/{num_splits} with {total_instances} instances" + bcolors.ENDC)
-        
+
         # Fit the model on the split
         model = selector.fit(df_split)
-        
+
         # Extract weights from the model
         weights = model.weights
         n_select = int(len(weights) * selector.getSelectionThreshold())
         selected_indices = np.argsort(weights)[-n_select:]
-        
+
         # Map indices to feature names and convert weights to list for JSON serialization
         selected_features = [feature_cols[idx] for idx in selected_indices]
         selected_weights = weights[selected_indices].tolist()  # Convert numpy array to list
         top_features_per_split.append((i, selected_features, selected_weights))
-        
+
         print(bcolors.OKGREEN + f"Split {i + 1}: Top {len(selected_features)} features: {selected_features}" + bcolors.ENDC)
         end_time = time.time()
         elapsed_time = end_time - start_time
         print(bcolors.OKCYAN + f"Elapsed time for split {i + 1}: {elapsed_time:.4f} seconds" + bcolors.ENDC)
-        
+
         # Save checkpoint after each split
         save_checkpoint(i, top_features_per_split)
-        
+
         df_split.unpersist(blocking=True)
         spark.sparkContext._jvm.System.gc()
-        
+
         print(bcolors.OKCYAN + f"Released resources for split {i + 1}" + bcolors.ENDC)
         total_time += elapsed_time
 
     # Clear checkpoint after successful completion
     clear_checkpoint()
-    
+
 except Exception as e:
     print(bcolors.FAIL + f"Error occurred: {str(e)}" + bcolors.ENDC)
     save_checkpoint(current_split, top_features_per_split)
@@ -274,7 +274,7 @@ print(bcolors.HEADER + "Checking for NaN or Infinity before training..." + bcolo
 for col_name in global_top_features:
     count_nan = df_reduced.filter(isnan(col(col_name)) | isnull(col(col_name))).count()
     count_inf = df_reduced.filter(col(col_name) == float("inf")).count()
-    
+
     if count_nan > 0 or count_inf > 0:
         print(f"{bcolors.WARNING}⚠️ Cột {col_name} có {count_nan} NaN và {count_inf} Infinity!{bcolors.ENDC}")
 

@@ -1,4 +1,4 @@
-WORKER_COUNT := 3
+WORKER_COUNT := 4
 
 infras:
 	python scripts/update_hosts.py
@@ -17,3 +17,11 @@ stats:
 install:
 	python -m pip install -r requirements.txt
 	python scripts/setup_jars.py
+
+impro-rf-pipeline:
+	cd improved-ids && \
+	python ./run.py
+
+monitor-app:
+	cd improved-ids && \
+	uvicorn api.main:app --reload

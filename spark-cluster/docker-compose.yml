@@ -5,8 +5,8 @@ services:
       dockerfile: Dockerfile
     command: bin/spark-class org.apache.spark.deploy.master.Master
     ports:
-      - "8080:8080"  # Spark Master Web UI 
-      - "7077:7077" 
+      - "8080:8080"  # Spark Master Web UI
+      - "7077:7077"
     environment:
       - SPARK_MODE=master
       - SPARK_MASTER_HOST=spark-master
@@ -31,7 +31,7 @@ services:
       - SPARK_MODE=worker
       - SPARK_MASTER=spark://spark-master:7077
       - SPARK_WORKER_MEMORY=4300m
-      - SPARK_WORKER_CORES=2   
+      - SPARK_WORKER_CORES=2
     deploy:
       resources:
         limits:
@@ -41,6 +41,9 @@ services:
       - "host.docker.internal:host-gateway"
     networks:
       - spark-network
+    volumes:
+      - ../improved-ids/data:/opt/spark-data
+    user: "0:0"  # Run as root to avoid permission issues
 
   minio:
     image: minio/minio:latest
@@ -61,7 +64,7 @@ services:
         limits:
           cpus: '1.0'
           memory: 1G
-  
+
   minio-mc:
     image: minio/mc
     depends_on:
