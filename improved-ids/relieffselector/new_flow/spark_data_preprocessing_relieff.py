@@ -1,28 +1,28 @@
 import time
+import os
+import numpy as np
 from pyspark.sql import SparkSession
 from pyspark.ml.linalg import Vectors
-from pyspark.sql.functions import col, sum, count, when, lit, udf
-from pyspark.ml.feature import MinMaxScaler, VectorAssembler, StringIndexer
-import numpy as np
-import pandas as pd
-from pyspark.ml.classification import RandomForestClassifier
-from pyspark.ml.evaluation import MulticlassClassificationEvaluator
-from sklearn.metrics import precision_recall_fscore_support, accuracy_score
-
+from pyspark.sql.functions import col, when, lit, isnan, isnull
+from pyspark.ml.feature import VectorAssembler, StringIndexer
 from relieffselector import ReliefFSelector
-from modules.utils import save_checkpoint, clear_checkpoint, load_checkpoint, bcolors
-import os
-import signal
 import json
-import sys
 
-print("Running on:", os.name)  # 'posix' nếu là Linux (container), 'nt' nếu là Windows
+print("Running on:", os.name)
 print("Current working directory:", os.getcwd())
 
-jars_dir = os.getcwd() + "/venv/Lib/site-packages/pyspark/jars"
-print(jars_dir)
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
-# # Danh sách JAR cần thiết
+jars_dir = "/home/lillie/Documents/Study/Improved-RF-for-Real-time-IDS-with-Spark/venv/Lib/site-packages/pyspark/jars"
 jars_list = [
     "hadoop-aws-3.3.6.jar",
     "aws-java-sdk-bundle-1.11.1026.jar",
@@ -31,22 +31,24 @@ jars_list = [
     "hadoop-client-3.3.6.jar"
 ]
 jars = ",".join([os.path.join(jars_dir, jar) for jar in jars_list])
+
 # Khởi tạo Spark session
 spark: SparkSession = SparkSession.builder\
     .appName("pyspark-notebook")\
     .master("spark://127.0.0.1:7077")\
+    .config("spark.jars", jars) \
     .config("spark.driver.host", "host.docker.internal") \
     .config("spark.driver.bindAddress", "0.0.0.0")\
-    .config("spark.driver.memory", "4g") \
+    .config("spark.driver.memory", "6g") \
     .config("spark.executor.memory", "4g") \
     .config("spark.executor.cores", "2") \
     .config("spark.executor.instances", "3")\
     .config("spark.network.timeout", "1200s") \
     .config("spark.driver.maxResultSize", "2g") \
     .config("spark.memory.offHeap.enabled", "true") \
-    .config("spark.memory.offHeap.size", "2g") \
+    .config("spark.memory.offHeap.size", "4g") \
     .config("spark.shuffle.file.buffer", "2048k") \
-    .config("spark.default.parallelism", "4") \
+    .config("spark.default.parallelism", "8") \
     .config("spark.shuffle.io.maxRetries", "10") \
     .config("spark.shuffle.io.retryWait", "60s") \
     .config("spark.hadoop.fs.s3a.block.size", "33554432") \
@@ -62,18 +64,17 @@ spark: SparkSession = SparkSession.builder\
     .config("spark.shuffle.service.enabled", "true") \
     .getOrCreate()
 
+# Load dữ liệu từ 1 file (đã comment các file khác để test)
 volume_files = [
     "s3a://mybucket/cicids2017/Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv",
-    "s3a://mybucket/cicids2017/Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv",
-    "s3a://mybucket/cicids2017/Friday-WorkingHours-Morning.pcap_ISCX.csv",
-    "s3a://mybucket/cicids2017/Monday-WorkingHours.pcap_ISCX.csv",
-    "s3a://mybucket/cicids2017/Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv",
-    "s3a://mybucket/cicids2017/Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv",
-    "s3a://mybucket/cicids2017/Tuesday-WorkingHours.pcap_ISCX.csv",
-    "s3a://mybucket/cicids2017/Wednesday-workingHours.pcap_ISCX.csv",
+    # "s3a://mybucket/cicids2017/Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv",
+    # "s3a://mybucket/cicids2017/Friday-WorkingHours-Morning.pcap_ISCX.csv",
+    # "s3a://mybucket/cicids2017/Monday-WorkingHours.pcap_ISCX.csv",
+    # "s3a://mybucket/cicids2017/Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv",
+    # "s3a://mybucket/cicids2017/Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv",
+    # "s3a://mybucket/cicids2017/Tuesday-WorkingHours.pcap_ISCX.csv",
+    # "s3a://mybucket/cicids2017/Wednesday-workingHours.pcap_ISCX.csv",
 ]
-
-print("Start")
 
 df = spark.read \
     .option("nullValue", "NA") \
@@ -87,27 +88,25 @@ df = df.replace(['Heartbleed', 'Web Attack � Sql Injection', 'Infiltration'], 
 df = df.dropna(how='any')
 
 # Replace 'Web Attack � Brute Force' with 'Brute Force'
-print("Replace 'Web Attack � Brute Force' with 'Brute Force'")
 df = df.withColumn('Label', when(col('Label') == 'Web Attack � Brute Force', 'Brute Force').otherwise(col('Label')))
 
 # Replace 'Web Attack � XSS' with 'XSS'
-print("Replace 'Web Attack � XSS' with 'XSS'")
 df = df.withColumn('Label', when(col('Label') == 'Web Attack � XSS', 'XSS').otherwise(col('Label')))
 
 df = df.withColumn('Attack', when(col('Label') == 'BENIGN', 0).otherwise(1))
 
 attack_group = {
-    'BENIGN': 'benign',
+    'BENIGN': 'benign', 
     'DoS Hulk': 'dos',
-    'PortScan': 'probe',
+    'PortScan': 'probe', 
     'DDoS': 'ddos',
-    'DoS GoldenEye': 'dos',
+    'DoS GoldenEye': 'dos', 
     'FTP-Patator': 'brute_force',
-    'SSH-Patator': 'brute_force',
-    'DoS slowloris': 'dos',
+    'SSH-Patator': 'brute_force', 
+    'DoS slowloris': 'dos', 
     'DoS Slowhttptest': 'dos',
     'Bot': 'botnet',
-    'Brute Force': 'web_attack',
+    'Brute Force': 'web_attack', 
     'XSS': 'web_attack'
 }
 
@@ -120,7 +119,7 @@ for condition in conditions[1:]:  # Chain the rest
 
 # Get numeric columns only and exclude label columns
 exclude_cols = ['Label', 'Label_Category', 'Attack']
-feature_cols = [col_name for col_name in df.columns
+feature_cols = [col_name for col_name in df.columns 
                if col_name not in exclude_cols
                and df.schema[col_name].dataType.typeName() in ('double', 'integer', 'float')]
 
@@ -145,11 +144,13 @@ label_to_name = {index: label for index, label in enumerate(labels)}
 assembler = VectorAssembler(inputCols=feature_cols, outputCol="features")
 df_vector = assembler.transform(df).select("features", "label")
 
+# print(df_vector.count())
+
 def calculate_number_of_subsets(spark_df, max_records=15000):
     total_records = spark_df.count()
-
+    
     num_subsets = (total_records + max_records - 1) // max_records
-
+    
     return num_subsets
 
 
@@ -158,23 +159,6 @@ num_splits = calculate_number_of_subsets(df_vector, max_records=15000) # base 15
 split_weights = [1.0 / num_splits] * num_splits
 df_splits = df_vector.randomSplit(split_weights, seed=42)
 
-
-# Signal handler for graceful shutdown
-def signal_handler(signum, frame):
-    print(bcolors.WARNING + "\nInterrupt received, saving checkpoint..." + bcolors.ENDC)
-    if 'current_split' in globals() and 'top_features_per_split' in globals():
-        save_checkpoint(current_split, top_features_per_split)
-    sys.exit(0)
-
-# Register signal handler
-signal.signal(signal.SIGINT, signal_handler)
-
-# Load previous checkpoint if exists
-last_split, top_features_per_split = load_checkpoint()
-if last_split >= 0:
-    print(bcolors.OKBLUE + f"Resuming from split {last_split + 1}" + bcolors.ENDC)
-else:
-    top_features_per_split = []
 
 # Now run ReliefFSelector
 selector = (
@@ -185,53 +169,39 @@ selector = (
 )
 
 # Process each split and collect top features
+top_features_per_split = []
 total_time = 0.0
-try:
-    for i, df_split in enumerate(df_splits):
-        if i <= last_split:
-            continue
+for i, df_split in enumerate(df_splits):
+    start_time = time.time()
+    total_instances = df_split.count()
+    print(bcolors.HEADER + f"Processing split {i + 1}/{num_splits} with {total_instances} instances" + bcolors.ENDC)
+    
+    # Fit the model on the split
+    model = selector.fit(df_split)
+    
+    # Extract weights from the model
+    weights = model.weights  # Assuming ReliefFSelectorModel exposes weights
+    n_select = int(len(weights) * selector.getSelectionThreshold())
+    selected_indices = np.argsort(weights)[-n_select:]  # Top feature indices
+    
+    # Map indices to feature names
+    selected_features = [feature_cols[idx] for idx in selected_indices]
+    top_features_per_split.append((i, selected_features, weights[selected_indices]))
+    
+    # Transform the split
+    # selected_df = model.transform(df_split)
+    print(bcolors.OKGREEN + f"Split {i + 1}: Top {len(selected_features)} features: {selected_features}" + bcolors.ENDC)
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(bcolors.OKCYAN + f"Elapsed time for split {i + 1}: {elapsed_time:.4f} seconds" + bcolors.ENDC)
+    
+    df_split.unpersist(blocking=True)  # Clear cache immediately
+    spark.sparkContext._jvm.System.gc()  # Suggest garbage collection
 
-        current_split = i  # For signal handler
-        start_time = time.time()
-        total_instances = df_split.count()
-        print(bcolors.HEADER + f"Processing split {i + 1}/{num_splits} with {total_instances} instances" + bcolors.ENDC)
+    print(bcolors.OKCYAN + f"Released resources for split {i + 1}" + bcolors.ENDC)
+    total_time += elapsed_time
 
-        # Fit the model on the split
-        model = selector.fit(df_split)
-
-        # Extract weights from the model
-        weights = model.weights
-        n_select = int(len(weights) * selector.getSelectionThreshold())
-        selected_indices = np.argsort(weights)[-n_select:]
-
-        # Map indices to feature names and convert weights to list for JSON serialization
-        selected_features = [feature_cols[idx] for idx in selected_indices]
-        selected_weights = weights[selected_indices].tolist()  # Convert numpy array to list
-        top_features_per_split.append((i, selected_features, selected_weights))
-
-        print(bcolors.OKGREEN + f"Split {i + 1}: Top {len(selected_features)} features: {selected_features}" + bcolors.ENDC)
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-        print(bcolors.OKCYAN + f"Elapsed time for split {i + 1}: {elapsed_time:.4f} seconds" + bcolors.ENDC)
-
-        # Save checkpoint after each split
-        save_checkpoint(i, top_features_per_split)
-
-        df_split.unpersist(blocking=True)
-        spark.sparkContext._jvm.System.gc()
-
-        print(bcolors.OKCYAN + f"Released resources for split {i + 1}" + bcolors.ENDC)
-        total_time += elapsed_time
-
-    # Clear checkpoint after successful completion
-    clear_checkpoint()
-
-except Exception as e:
-    print(bcolors.FAIL + f"Error occurred: {str(e)}" + bcolors.ENDC)
-    save_checkpoint(current_split, top_features_per_split)
-    raise e
-
-print(bcolors.WARNING + f"Total elapsed time for processed splits: {total_time:.4f} seconds" + bcolors.ENDC)
+print(bcolors.WARNING + f"Total elapsed time for {num_splits} splits: {total_time:.4f} seconds" + bcolors.ENDC)
 
 # Combine top features (example: union of all selected features)
 all_top_features = set()
@@ -266,8 +236,6 @@ df_reduced = df.select(columns_to_keep)
 df_reduced.show(10)
 print(f"Shape of df_reduced: {len(df_reduced.columns)} columns")
 
-# Lưu tập dữ liệu đã chọn đặc trưng dưới dạng Parquet để sử dụng trong test_rf.py
-
 
 from pyspark.sql.functions import isnan, isnull, when
 
@@ -277,7 +245,7 @@ print(bcolors.HEADER + "Checking for NaN or Infinity before training..." + bcolo
 for col_name in global_top_features:
     count_nan = df_reduced.filter(isnan(col(col_name)) | isnull(col(col_name))).count()
     count_inf = df_reduced.filter(col(col_name) == float("inf")).count()
-
+    
     if count_nan > 0 or count_inf > 0:
         print(f"{bcolors.WARNING}⚠️ Cột {col_name} có {count_nan} NaN và {count_inf} Infinity!{bcolors.ENDC}")
 
@@ -300,65 +268,16 @@ for col_name in global_top_features:
 assembler_selected = VectorAssembler(inputCols=global_top_features, outputCol="features")
 df_reduced = assembler_selected.transform(df_reduced).select("features", "label")
 
-# 🚀 Train-Test Split từ `df_reduced`
-train_df, test_df = df_reduced.randomSplit([0.8, 0.2], seed=42)
+# Lưu dữ liệu đã giảm chiều
+reduced_data_path = "s3a://mybucket/preprocessed_data/reduced_data.parquet"
+df_reduced.write.mode("overwrite").parquet(reduced_data_path)
+print(bcolors.OKGREEN + f"✅ Reduced data saved to {reduced_data_path}" + bcolors.ENDC)
 
-# 🚀 Huấn luyện Random Forest trên tập đã giảm chiều
-rf = RandomForestClassifier(featuresCol="features", labelCol="label", numTrees=100, maxDepth=10, seed=42)
-rf_model = rf.fit(train_df)
-
-# Đường dẫn để lưu mô hình (có thể là local hoặc S3)
-model_path = "s3a://mybucket/models/random_forest_model"  # Thay đổi đường dẫn nếu cần
-
-# Lưu mô hình
-rf_model.write().overwrite().save(model_path)
-print(bcolors.OKGREEN + f"✅ Model saved to {model_path}" + bcolors.ENDC)
 # Lưu global_top_features và label_to_name
-import json
 spark.createDataFrame([(json.dumps(global_top_features),)], ["features"])\
     .write.mode("overwrite").text("s3a://mybucket/models/global_top_features")
 spark.createDataFrame([(json.dumps(label_to_name),)], ["labels"])\
     .write.mode("overwrite").text("s3a://mybucket/models/label_to_name")
 print(bcolors.OKGREEN + "✅ Metadata (features and labels) saved to S3" + bcolors.ENDC)
 
-# 📌 Dự đoán trên tập test
-predictions = rf_model.transform(test_df)
-
-# 🎯 Đánh giá mô hình
-evaluator = MulticlassClassificationEvaluator(labelCol="label", predictionCol="prediction", metricName="f1")
-f1_score = evaluator.evaluate(predictions)
-
-# Chuyển đổi label dự đoán thành danh sách
-y_validate = predictions.select("label").toPandas()
-y_predicted = predictions.select("prediction").toPandas()
-
-# Đánh giá Precision, Recall, F1-score
-precision, recall, fscore, support = precision_recall_fscore_support(y_validate, y_predicted)
-print(f"Length of Precision Array: {len(precision)}")
-# Lấy danh sách nhãn thực tế từ y_validate
-actual_labels = sorted(y_validate["label"].unique())  # Chỉ lấy các nhãn có trong dữ liệu
-print(f"Unique Labels in Data: {actual_labels}")
-# Ánh xạ nhãn số về nhãn gốc
-original_labels = [label_to_name[label] for label in actual_labels]
-# Tạo DataFrame với các nhãn thực tế thay vì toàn bộ attack_group.keys()
-df_results = pd.DataFrame({
-    'attack': actual_labels,  # ✅ Chỉ lấy nhãn có trong tập dữ liệu
-    'original_label': original_labels,
-    'precision': precision,
-    'recall': recall,
-    'fscore': fscore
-})
-
-# Macro Average
-precision_macro, recall_macro, fscore_macro, _ = precision_recall_fscore_support(y_validate, y_predicted, average='macro')
-accuracy = accuracy_score(y_validate, y_predicted)
-
-# Hiển thị kết quả
-print(f"\n✅ F1-score: {f1_score:.4f}")
-print(df_results.to_string(index=False))
-print(f"\n✅ Precision (macro): {precision_macro:.4f}")
-print(f"✅ Recall (macro): {recall_macro:.4f}")
-print(f"✅ F1-score (macro): {fscore_macro:.4f}")
-print(f"✅ Accuracy: {accuracy:.4f}")
-# Dừng SparkSession
 spark.stop()
