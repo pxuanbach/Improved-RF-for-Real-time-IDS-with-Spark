@@ -25,3 +25,8 @@ impro-rf-pipeline:
 monitor-app:
 	cd improved-ids && \
 	uvicorn api.main:app --reload
+
+
+cmids-pipeline:
+	cd common-ids && \
+	python ./main.py
