@@ -18,11 +18,15 @@ make infras
 ```
 Linux comand: 
 ```
-pyenv versions
-pyenv local 3.11.9
-python -m venv venv
-source venv/bin/activate
+    pyenv versions
+    pyenv local 3.11.9
+    python -m venv venv
+    source venv/bin/activate
 
-make install
-make infras
+    make install
+    make infras
+
+	python improved-ids/modules/linux-version/spark_data_preprocessing_relieff.py 
+	python improved-ids/modules/linux-version/RF/spark_rf_training.py 
+	python improved-ids/modules/linux-version/RF/spark_rf_detection.py 
 ```
