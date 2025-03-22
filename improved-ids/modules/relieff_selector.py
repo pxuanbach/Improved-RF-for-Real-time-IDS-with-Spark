@@ -7,7 +7,7 @@ from datetime import datetime
 import os
 
 from modules.utils import save_checkpoint, clear_checkpoint, load_checkpoint, bcolors
-from relieffselector.relieffselector import ReliefFSelector
+from relieffselector import ReliefFSelector
 
 
 FEATURES_DIR = "./data/features"

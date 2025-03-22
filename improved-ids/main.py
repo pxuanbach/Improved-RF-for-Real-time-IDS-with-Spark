@@ -14,7 +14,7 @@ from modules.relieff_selector import ReliefFFeatureSelector
 from modules.dimension_reducer import DimensionReducer
 from modules.rf_selector import RFSelector
 from modules.model_trainer import ModelTrainer
-from relieffselector.relieffselector import ReliefFSelector
+from modules.relieffselector import ReliefFSelector
 
 def log_time(section_name: str, start_time: float) -> None:
     elapsed = time.time() - start_time
