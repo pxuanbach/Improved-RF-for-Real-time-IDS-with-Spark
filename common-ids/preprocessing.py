@@ -72,6 +72,10 @@ class DataPreprocessor:
             self.df = self.df.replace([np.inf, -np.inf], np.nan)
             self.df = self.df.dropna()
 
+        self.df['Flow Bytes/s'] = self.df['Flow Bytes/s'].astype('float64')
+        self.df['Flow Packets/s'] = self.df['Flow Packets/s'].astype('float64')
+        self.df = self.df.loc[:, ~self.df.columns.duplicated()]
+
         # rename columns
         self.df.loc[self.df.Label == 'Web Attack � Brute Force', ['Label']] = 'Brute Force'
         self.df.loc[self.df.Label == 'Web Attack � XSS', ['Label']] = 'XSS'
