@@ -3,13 +3,13 @@ import os
 import time  # Thêm import time để đo thời gian
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))  # Thêm cấp thư mục cha
 from pyspark.sql import SparkSession
-from pyspark.ml.classification import RandomForestClassifier
+from pyspark.ml.classification import GBTClassifier, OneVsRest  # Thêm OneVsRest
 from spark_utils import create_spark_session
 from model_utils import evaluate_model, bcolors
 from data_preprocessing import preprocess_data, create_label_index, reduce_dimensions, handle_nan_infinity, create_feature_vector, load_metadata
 
 # Khởi tạo Spark session
-spark = create_spark_session("pyspark-rf-training")
+spark = create_spark_session("pyspark-gbt-ovr-training")
 
 # Load dữ liệu đã giảm chiều
 reduced_data_path = "s3a://mybucket/preprocessed_data/reduced_data.parquet"
@@ -26,31 +26,31 @@ for index, label in label_to_name.items():
 # Train-Test Split
 train_df, test_df = df_reduced.randomSplit([0.8, 0.2], seed=42)
 
-# Huấn luyện Random Forest với đo thời gian
-rf = RandomForestClassifier(
+# Huấn luyện Gradient Boosted Trees với OneVsRest cho đa lớp
+gbt = GBTClassifier(
     featuresCol="features",
     labelCol="label",
-    numTrees=200,               # Số cây
-    maxDepth=42,                # Độ sâu tối đa của mỗi cây
-    minInstancesPerNode=2,      # Số mẫu tối thiểu để chia node
-    featureSubsetStrategy="sqrt",  # Số đặc trưng tối đa khi chia node
-    impurity="gini",            # Tiêu chí đo độ không thuần khiết
-    seed=42                     # Đảm bảo tính tái lập
+    maxIter=200,           # Số cây (tương ứng n_estimators=200)
+    maxDepth=10,           # Độ sâu tối đa của mỗi cây
+    stepSize=0.05,         # Tốc độ học (tương ứng learning_rate=0.05)
+    subsamplingRate=0.8,   # Tỷ lệ dữ liệu dùng cho mỗi cây
+    seed=42                # Đảm bảo tính tái lập
 )
-print(bcolors.OKCYAN + "⏳ Training Random Forest model..." + bcolors.ENDC)
+ovr = OneVsRest(classifier=gbt, featuresCol="features", labelCol="label")
+print(bcolors.OKCYAN + "⏳ Training Gradient Boosted Trees with OneVsRest model..." + bcolors.ENDC)
 start_time = time.time()  # Bắt đầu đo thời gian
-rf_model = rf.fit(train_df)
+ovr_model = ovr.fit(train_df)
 end_time = time.time()  # Kết thúc đo thời gian
 training_time = end_time - start_time
 print(bcolors.OKGREEN + f"✅ Training completed in {training_time:.2f} seconds" + bcolors.ENDC)
 
 # Lưu mô hình
-model_path = "s3a://mybucket/models/random_forest_model"
-rf_model.write().overwrite().save(model_path)
+model_path = "s3a://mybucket/models/gradient_boosted_trees_ovr_model"
+ovr_model.write().overwrite().save(model_path)
 print(bcolors.OKGREEN + f"✅ Model saved to {model_path}" + bcolors.ENDC)
 
 # Dự đoán trên tập test
-predictions = rf_model.transform(test_df)
+predictions = ovr_model.transform(test_df)
 
 # Đánh giá mô hình
 f1_score, df_results, precision_macro, recall_macro, fscore_macro, accuracy = evaluate_model(predictions, label_to_name=label_to_name)

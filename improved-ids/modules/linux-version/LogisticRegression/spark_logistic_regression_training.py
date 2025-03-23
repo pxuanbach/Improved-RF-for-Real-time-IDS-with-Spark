@@ -3,13 +3,13 @@ import os
 import time  # Thêm import time để đo thời gian
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))  # Thêm cấp thư mục cha
 from pyspark.sql import SparkSession
-from pyspark.ml.classification import RandomForestClassifier
+from pyspark.ml.classification import LogisticRegression
 from spark_utils import create_spark_session
 from model_utils import evaluate_model, bcolors
 from data_preprocessing import preprocess_data, create_label_index, reduce_dimensions, handle_nan_infinity, create_feature_vector, load_metadata
 
 # Khởi tạo Spark session
-spark = create_spark_session("pyspark-rf-training")
+spark = create_spark_session("pyspark-lr-training")
 
 # Load dữ liệu đã giảm chiều
 reduced_data_path = "s3a://mybucket/preprocessed_data/reduced_data.parquet"
@@ -26,31 +26,29 @@ for index, label in label_to_name.items():
 # Train-Test Split
 train_df, test_df = df_reduced.randomSplit([0.8, 0.2], seed=42)
 
-# Huấn luyện Random Forest với đo thời gian
-rf = RandomForestClassifier(
+# Huấn luyện Logistic Regression với đo thời gian
+lr = LogisticRegression(
     featuresCol="features",
     labelCol="label",
-    numTrees=200,               # Số cây
-    maxDepth=42,                # Độ sâu tối đa của mỗi cây
-    minInstancesPerNode=2,      # Số mẫu tối thiểu để chia node
-    featureSubsetStrategy="sqrt",  # Số đặc trưng tối đa khi chia node
-    impurity="gini",            # Tiêu chí đo độ không thuần khiết
-    seed=42                     # Đảm bảo tính tái lập
+    maxIter=15000,  # Tương ứng với max_iter=15000
+    regParam=0.01,  # Tương ứng với C=100 (regParam = 1/C)
+    elasticNetParam=0.0,  # Chỉ dùng L2 regularization
+    family="multinomial"  # Hỗ trợ phân loại đa lớp
 )
-print(bcolors.OKCYAN + "⏳ Training Random Forest model..." + bcolors.ENDC)
+print(bcolors.OKCYAN + "⏳ Training Logistic Regression model..." + bcolors.ENDC)
 start_time = time.time()  # Bắt đầu đo thời gian
-rf_model = rf.fit(train_df)
+lr_model = lr.fit(train_df)
 end_time = time.time()  # Kết thúc đo thời gian
 training_time = end_time - start_time
 print(bcolors.OKGREEN + f"✅ Training completed in {training_time:.2f} seconds" + bcolors.ENDC)
 
 # Lưu mô hình
-model_path = "s3a://mybucket/models/random_forest_model"
-rf_model.write().overwrite().save(model_path)
+model_path = "s3a://mybucket/models/logistic_regression_model"
+lr_model.write().overwrite().save(model_path)
 print(bcolors.OKGREEN + f"✅ Model saved to {model_path}" + bcolors.ENDC)
 
 # Dự đoán trên tập test
-predictions = rf_model.transform(test_df)
+predictions = lr_model.transform(test_df)
 
 # Đánh giá mô hình
 f1_score, df_results, precision_macro, recall_macro, fscore_macro, accuracy = evaluate_model(predictions, label_to_name=label_to_name)

@@ -134,66 +134,57 @@ Hiện tại, các bài báo bạn đã cung cấp **không ghi rõ trực tiế
 
 ### ✅ **1\. Logistic Regression – Tham số thường dùng với CICIDS2017**
 
-| Tham số | Giá trị phổ biến | Ghi chú |
-| --- | --- | --- |
-| **Penalty** | `l2` | Regularization phổ biến |
-| **Solver** | `liblinear` hoặc `saga` | Phù hợp cho dữ liệu vừa và lớn |
-| **C** | 0.1 – 1.0 | Inverse của regularization strength |
-| **Max\_iter** | 100 – 1000 | Số vòng lặp tối đa |
-| **Class\_weight** | `balanced` | Giúp mô hình xử lý mất cân bằng nhãn |
-| **Learning rate** | Không có trực tiếp (LR là thuật toán convex), nhưng ảnh hưởng bởi `C` |  |
+| Tham số            | Giá trị phổ biến | Giá trị trong scikit-learn | Giá trị trong Spark | Ghi chú                              |
+|--------------------|------------------|----------------------------|---------------------|--------------------------------------|
+| **Penalty**        | `l2`             | `l2`                       | `elasticNetParam=0.0` (L2) | Regularization phổ biến             |
+| **Solver**         | `liblinear` hoặc `saga` | `sag`                 | L-BFGS (mặc định)   | Phù hợp cho dữ liệu vừa và lớn      |
+| **C**              | 0.1 – 1.0        | `C=100`                    | `regParam=0.01` (1/C) | Inverse của regularization strength |
+| **Max_iter**       | 100 – 1000       | `max_iter=15000`           | `maxIter=15000`     | Số vòng lặp tối đa                  |
+| **Class_weight**   | `balanced`       | Không sử dụng              | `weightCol` (tùy chọn) | Giúp mô hình xử lý mất cân bằng nhãn |
+| **Learning rate**  | Không có trực tiếp | Không có trực tiếp         | Không có trực tiếp  | Ảnh hưởng bởi `C` hoặc `regParam`   |
 
-> 📌 Nguồn tham khảo từ các paper: [IEEE 10540382](https://ieeexplore.ieee.org/document/10540382), [Springer LNCS 2023](https://link.springer.com/chapter/10.1007/978-3-031-46584-0_13)
-
-* * *
-
-### ✅ **2\. Gradient Boosted Trees (XGBoost / LightGBM)** – Tham số điển hình
-
-| Tham số | Giá trị phổ biến | Ghi chú |
-| --- | --- | --- |
-| **n\_estimators** | 100 – 500 | Số cây trong mô hình |
-| **max\_depth** | 5 – 10 | Độ sâu mỗi cây |
-| **learning\_rate** | 0.01 – 0.1 | Tốc độ học |
-| **subsample** | 0.7 – 0.9 | Tỷ lệ dữ liệu dùng cho mỗi cây |
-| **colsample\_bytree** | 0.7 – 1.0 | Tỷ lệ cột dùng cho mỗi cây |
-| **objective** | `binary:logistic` | Dùng cho bài toán phân loại nhị phân |
-| **eval\_metric** | `auc`, `logloss` | Dùng để đánh giá mô hình trong quá trình huấn luyện |
-
-> 📌 Nguồn từ [IEEE 10387439](https://ieeexplore.ieee.org/document/10387439), [ACM 2019](https://dl.acm.org/doi/abs/10.1145/3299815.3314439)
-
-* * *
-
-### ✅ **3\. GPT hoặc Transformer-based model – Tham số phổ biến trong IDS**
-
-| Tham số | Giá trị phổ biến | Ghi chú |
-| --- | --- | --- |
-| **Model** | GPT-2 / GPT-neo | Fine-tuned cho đặc trưng IDS |
-| **Hidden size** | 768 – 1024 | Số chiều không gian ẩn |
-| **Num layers** | 6 – 12 | Số lớp Transformer |
-| **Num attention heads** | 8 – 12 | Multi-head attention |
-| **Learning rate** | 1e-5 – 5e-5 | Fine-tuning GPT |
-| **Epochs** | 3 – 5 | Đủ để tránh overfitting |
-| **Batch size** | 16 – 64 | Tùy GPU |
-| **Loss function** | CrossEntropy | Phân loại softmax output |
-
-> 📌 Theo paper [IEEE 10835438](https://ieeexplore.ieee.org/abstract/document/10835438) và [arXiv 2411.03354](https://arxiv.org/pdf/2411.03354)
-
-* * *
-
-### 📌 Gợi ý sử dụng
-
-*   Logistic Regression: nên chuẩn hóa đầu vào bằng `StandardScaler`, xử lý mất cân bằng bằng `class_weight='balanced'`.
-    
-*   GBT (XGBoost): dùng `early_stopping_rounds` để tránh overfitting, chia tập validation.
-    
-*   GPT: cần embedding dữ liệu mạng thành chuỗi hoặc tokens trước khi fine-tune.
-    
-
-* * *
-
-Bạn muốn mình build bảng so sánh hiệu suất LR vs GBT vs GPT trên CICIDS2017 từ các paper trên không? Hoặc viết cấu hình huấn luyện cụ thể cho XGBoost / LR dùng scikit-learn?
-
-
+> 📌 **Ghi chú**:
+> - Trong scikit-learn, `C=100` và `solver="sag"` được sử dụng theo yêu cầu.
+> - Trong Spark MLlib, `regParam = 1/C = 0.01`, và Spark sử dụng L-BFGS thay vì `sag` (vì Spark không hỗ trợ `sag`).
+> - Nguồn tham khảo từ các paper: [IEEE 10540382](https://ieeexplore.ieee.org/document/10540382), [Springer LNCS 2023](https://link.springer.com/chapter/10.1007/978-3-031-46584-0_13)
 
 ---
-Powered by [ChatGPT Exporter](https://www.chatgptexporter.com)
+
+### ✅ **2\. Gradient Boosted Trees (XGBoost / LightGBM) – Tham số điển hình**
+
+| Tham số            | Giá trị phổ biến | Giá trị trong scikit-learn (XGBoost) | Giá trị trong Spark (GBTClassifier) | Ghi chú                              |
+|--------------------|------------------|--------------------------------------|-------------------------------------|--------------------------------------|
+| **n_estimators**   | 100 – 500        | `n_estimators=200`                   | `maxIter=200`                       | Số cây trong mô hình                |
+| **max_depth**      | 5 – 10           | `max_depth=10`                       | `maxDepth=10`                       | Độ sâu mỗi cây                      |
+| **learning_rate**  | 0.01 – 0.1       | `learning_rate=0.05`                 | `stepSize=0.05`                     | Tốc độ học                          |
+| **subsample**      | 0.7 – 0.9        | `subsample=0.8`                      | `subsamplingRate=0.8`               | Tỷ lệ dữ liệu dùng cho mỗi cây      |
+| **colsample_bytree** | 0.7 – 1.0      | `colsample_bytree=0.8`               | Không có trực tiếp (dùng `featureSubsetStrategy`) | Tỷ lệ cột dùng cho mỗi cây |
+| **objective**      | `binary:logistic` | `objective="binary:logistic"`       | Không cần (mặc định cho binary)     | Dùng cho bài toán phân loại nhị phân |
+| **eval_metric**    | `auc`, `logloss` | `eval_metric="logloss"`              | Không có trực tiếp (dùng `metric` trong evaluator) | Đánh giá mô hình trong huấn luyện |
+
+> 📌 **Ghi chú**:
+> - Trong scikit-learn (hoặc XGBoost), các tham số được chọn dựa trên giá trị phổ biến và phù hợp với dữ liệu lớn.
+> - Trong Spark MLlib, `GBTClassifier` được sử dụng thay cho XGBoost/LightGBM. Một số tham số như `colsample_bytree` không có trực tiếp, nhưng có thể thay thế bằng `featureSubsetStrategy` (ví dụ: `featureSubsetStrategy="0.8"`).
+> - Nguồn từ [IEEE 10387439](https://ieeexplore.ieee.org/document/10387439), [ACM 2019](https://dl.acm.org/doi/abs/10.1145/3299815.3314439)
+
+---
+
+### ✅ **3\. Random Forest (RF) – Tham số phổ biến trong IDS**
+
+> **Lưu ý**: Bảng gốc đề cập đến các tham số của mô hình Transformer (GPT-2/GPT-Neo), không phải Random Forest. Tôi sẽ sửa lại để tập trung vào Random Forest và thêm các tham số phù hợp.
+
+| Tham số            | Giá trị phổ biến | Giá trị trong scikit-learn | Giá trị trong Spark | Ghi chú                              |
+|--------------------|------------------|----------------------------|---------------------|--------------------------------------|
+| **n_estimators**   | 100 – 500        | `n_estimators=200`         | `numTrees=200`      | Số cây trong mô hình                |
+| **max_depth**      | 10 – 50          | `max_depth=42`             | `maxDepth=42`       | Độ sâu tối đa của mỗi cây           |
+| **min_samples_split** | 2 – 10        | `min_samples_split=2`      | `minInstancesPerNode=2` | Số mẫu tối thiểu để chia node       |
+| **max_features**   | `sqrt`, `log2`   | `max_features="sqrt"`      | `featureSubsetStrategy="sqrt"` | Số đặc trưng tối đa khi chia node   |
+| **criterion**      | `gini`, `entropy` | `criterion="gini"`        | `impurity="gini"`   | Tiêu chí để đo độ không thuần khiết |
+| **random_state**   | Bất kỳ số nguyên | `random_state=42`          | `seed=42`           | Đảm bảo tính tái lập                |
+
+> 📌 **Ghi chú**:
+> - Trong Spark MLlib, các tham số tương ứng là `numTrees=200` và `maxDepth=42`.
+> - Nguồn tham khảo: [IEEE 10835438](https://ieeexplore.ieee.org/abstract/document/10835438), [arXiv 2411.03354](https://arxiv.org/pdf/2411.03354)
+
+---
+
