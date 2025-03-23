@@ -7,7 +7,8 @@ RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/* \
         numpy==1.26.4 \
         pandas==2.2.1 \
         scikit-learn \
-        pyarrow==15.0.0
+        pyarrow==15.0.0 \ 
+        imbalanced-learn==0.13.0
 
 # Xóa các JAR Hadoop cũ trong image
 RUN rm -f /opt/bitnami/spark/jars/hadoop-*.jar && \

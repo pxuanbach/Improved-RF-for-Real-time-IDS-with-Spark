@@ -2,11 +2,15 @@ import sys
 import os
 import time  # Thêm import time để đo thời gian
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))  # Thêm cấp thư mục cha
+import time
+import numpy as np
+import pandas as pd
 from pyspark.sql import SparkSession
 from pyspark.ml.classification import RandomForestClassifier
 from spark_utils import create_spark_session
 from model_utils import evaluate_model, bcolors
 from data_preprocessing import preprocess_data, create_label_index, reduce_dimensions, handle_nan_infinity, create_feature_vector, load_metadata
+from imblearn.over_sampling import SMOTE  # Thêm import SMOTE
 
 # Khởi tạo Spark session
 spark = create_spark_session("pyspark-rf-training")
@@ -23,24 +27,42 @@ print(bcolors.OKGREEN + "✅ Loaded label mapping:" + bcolors.ENDC)
 for index, label in label_to_name.items():
     print(f"  - Index {index}: {label}")
 
-# Train-Test Split
-train_df, test_df = df_reduced.randomSplit([0.8, 0.2], seed=42)
+# Chuyển đổi dữ liệu về Pandas để áp dụng SMOTE
+print(bcolors.OKCYAN + "⏳ Applying SMOTE to handle class imbalance..." + bcolors.ENDC)
+# Chuyển cột features (vector) và label thành Pandas DataFrame
+pandas_df = df_reduced.select("features", "label").toPandas()
+# Chuyển cột features (vector) thành mảng numpy
+X = np.array([row["features"].toArray() for row in pandas_df.itertuples()])
+y = pandas_df["label"].values
 
-# Huấn luyện Random Forest với đo thời gian
+# Áp dụng SMOTE
+smote = SMOTE(random_state=42)
+X_resampled, y_resampled = smote.fit_resample(X, y)
+
+# Chuyển dữ liệu đã resample về Spark DataFrame
+from pyspark.ml.linalg import Vectors
+resampled_data = [(Vectors.dense(x), float(y)) for x, y in zip(X_resampled, y_resampled)]
+df_resampled = spark.createDataFrame(resampled_data, ["features", "label"])
+print(bcolors.OKGREEN + "✅ SMOTE applied successfully" + bcolors.ENDC)
+
+# Train-Test Split
+train_df, test_df = df_resampled.randomSplit([0.8, 0.2], seed=42)
+
+# Huấn luyện Random Forest 
 rf = RandomForestClassifier(
     featuresCol="features",
     labelCol="label",
-    numTrees=200,               # Số cây
-    maxDepth=42,                # Độ sâu tối đa của mỗi cây
-    minInstancesPerNode=2,      # Số mẫu tối thiểu để chia node
-    featureSubsetStrategy="sqrt",  # Số đặc trưng tối đa khi chia node
-    impurity="gini",            # Tiêu chí đo độ không thuần khiết
-    seed=42                     # Đảm bảo tính tái lập
+    numTrees=200,
+    maxDepth=42,
+    minInstancesPerNode=2,
+    featureSubsetStrategy="sqrt",
+    impurity="gini",
+    seed=42
 )
 print(bcolors.OKCYAN + "⏳ Training Random Forest model..." + bcolors.ENDC)
-start_time = time.time()  # Bắt đầu đo thời gian
+start_time = time.time()
 rf_model = rf.fit(train_df)
-end_time = time.time()  # Kết thúc đo thời gian
+end_time = time.time()
 training_time = end_time - start_time
 print(bcolors.OKGREEN + f"✅ Training completed in {training_time:.2f} seconds" + bcolors.ENDC)
 

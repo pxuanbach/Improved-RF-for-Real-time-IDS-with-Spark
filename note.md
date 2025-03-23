@@ -113,8 +113,10 @@ Nếu muốn RF chạy trên từng worker, có thể thử:
 - Load `global_top_features` và `label_to_name` từ S3.
 
 #### **2.2. Cân bằng dữ liệu - SMOTE**
-- Xử lý mất cân bằng dữ liệu bằng cách tạo thêm các mẫu tổng hợp cho các lớp thiểu số (minority classes), đảm bảo các lớp có số lượng mẫu cân bằng hơn.
-
+Xử lý mất cân bằng dữ liệu bằng cách tạo thêm các mẫu tổng hợp cho các lớp thiểu số (minority classes), đảm bảo các lớp có số lượng mẫu cân bằng hơn.
+- Chuyển dữ liệu về Pandas.
+- Áp dụng SMOTE (random_state=42) để tạo mẫu tổng hợp cho lớp thiểu số.
+- Chuyển dữ liệu đã resample về Spark DataFrame.
 #### **2.3. Chia dữ liệu**
 - Chia train/test: 80% train, 20% test (seed=42).
 
