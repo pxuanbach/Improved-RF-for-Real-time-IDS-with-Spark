@@ -8,7 +8,9 @@ def create_spark_session(app_name, master="spark://127.0.0.1:7077"):
         "aws-java-sdk-bundle-1.11.1026.jar",
         "guava-30.1-jre.jar",
         "hadoop-common-3.3.6.jar",
-        "hadoop-client-3.3.6.jar"
+        "hadoop-client-3.3.6.jar",
+        "xgboost4j-spark_2.12-2.0.3.jar",  # Thêm JAR cho XGBoost
+        "xgboost4j_2.12-2.0.3.jar"
     ]
     jars = ",".join([os.path.join(jars_dir, jar) for jar in jars_list])
 

@@ -6,9 +6,8 @@ from pyspark.ml.linalg import Vectors
 from relieffselector import ReliefFSelector
 import json
 from spark_utils import create_spark_session
-from data_preprocessing import preprocess_data, create_label_index, reduce_dimensions, handle_nan_infinity, create_feature_vector, load_metadata
-from model_utils import evaluate_model,bcolors
-
+from data_preprocessing import preprocess_data, remove_unwanted_columns, create_label_index, reduce_dimensions, handle_nan_infinity, create_feature_vector, normalize_features, load_metadata
+from model_utils import evaluate_model, bcolors
 
 print("Running on:", os.name)
 print("Current working directory:", os.getcwd())
@@ -32,11 +31,18 @@ df = spark.read.option("nullValue", "NA").option("emptyValue", "unknown").csv(vo
 # Tiền xử lý dữ liệu
 df = preprocess_data(df)
 
+# Loại bỏ các cột không phù hợp trước khi chạy feature selection
+df = remove_unwanted_columns(df)
+
 # Get numeric columns
 exclude_cols = ['Label', 'Label_Category', 'Attack']
 feature_cols = [col_name for col_name in df.columns 
                 if col_name not in exclude_cols and df.schema[col_name].dataType.typeName() in ('double', 'integer', 'float')]
-print(bcolors.OKBLUE + f"Selected {len(feature_cols)} numeric features" + bcolors.ENDC)
+print(bcolors.OKBLUE + f"Selected {len(feature_cols)} numeric features: {feature_cols}" + bcolors.ENDC)
+
+# Xử lý NaN/Infinity trước khi chạy ReliefF
+print(bcolors.HEADER + "Checking for NaN or Infinity before feature selection..." + bcolors.ENDC)
+df = handle_nan_infinity(df, feature_cols)
 
 # Tạo label index
 df, label_to_name, labels = create_label_index(df)
@@ -46,6 +52,11 @@ for index, label in enumerate(labels):
 
 # Tạo feature vector
 df_vector = create_feature_vector(df, feature_cols).select("features", "label")
+
+# Chuẩn hóa dữ liệu trước khi chạy ReliefF
+print(bcolors.HEADER + "Normalizing features before feature selection..." + bcolors.ENDC)
+df_vector = normalize_features(df_vector, input_col="features", output_col="scaled_features")
+df_vector = df_vector.select("scaled_features", "label").withColumnRenamed("scaled_features", "features")
 
 def calculate_number_of_subsets(spark_df, max_records=15000):
     total_records = spark_df.count()
@@ -113,10 +124,6 @@ df_reduced = reduce_dimensions(df, global_top_features)
 
 df_reduced.show(10)
 print(f"Shape of df_reduced: {len(df_reduced.columns)} columns")
-
-# Xử lý NaN/Infinity
-print(bcolors.HEADER + "Checking for NaN or Infinity before training..." + bcolors.ENDC)
-df_reduced = handle_nan_infinity(df_reduced, global_top_features)
 
 # Tạo vector đặc trưng cho dữ liệu đã giảm chiều
 df_reduced = create_feature_vector(df_reduced, global_top_features).select("features", "label")

@@ -1,6 +1,6 @@
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import col, when, lit, isnan, isnull
-from pyspark.ml.feature import StringIndexer, VectorAssembler
+from pyspark.ml.feature import StringIndexer, VectorAssembler, MinMaxScaler
 
 def preprocess_data(df: DataFrame) -> DataFrame:
     df = df.withColumnRenamed(' Label', 'Label')
@@ -24,6 +24,28 @@ def preprocess_data(df: DataFrame) -> DataFrame:
     
     return df
 
+def remove_unwanted_columns(df: DataFrame) -> DataFrame:
+    """
+    Loại bỏ các cột không phù hợp trước khi thực hiện feature selection.
+    Các cột này bao gồm cột định danh, cột lỗi thống kê, và cột gây bias.
+    
+    Args:
+        df (DataFrame): DataFrame đầu vào.
+    
+    Returns:
+        DataFrame: DataFrame sau khi loại bỏ các cột không phù hợp.
+    """
+    columns_to_drop = [
+        'Flow ID', 'Source IP', 'Destination IP', 'Timestamp',  # Cột định danh
+        'Flow Bytes/s', 'Flow Packets/s',                      # Cột lỗi thống kê
+        'Protocol', 'Destination Port'                         # Cột gây bias nếu không xử lý kỹ
+    ]
+    # Chỉ giữ các cột tồn tại trong DataFrame
+    columns_to_drop = [col for col in columns_to_drop if col in df.columns]
+    df = df.drop(*columns_to_drop)
+    print(f"✅ Dropped columns: {columns_to_drop}")
+    return df
+
 def handle_nan_infinity(df: DataFrame, feature_cols: list) -> DataFrame:
     for col_name in feature_cols:
         count_nan = df.filter(isnan(col(col_name)) | isnull(col(col_name))).count()
@@ -36,6 +58,23 @@ def handle_nan_infinity(df: DataFrame, feature_cols: list) -> DataFrame:
         median_value = df.approxQuantile(col_name, [0.5], 0.25)[0] or 0.0
         df = df.fillna({col_name: median_value})
     
+    return df
+
+def normalize_features(df: DataFrame, input_col="features", output_col="scaled_features") -> DataFrame:
+    """
+    Chuẩn hóa dữ liệu bằng MinMaxScaler để đưa các đặc trưng về thang đo [0, 1].
+    
+    Args:
+        df (DataFrame): DataFrame đầu vào với cột vector đặc trưng.
+        input_col (str): Tên cột chứa vector đặc trưng đầu vào.
+        output_col (str): Tên cột chứa vector đặc trưng đã chuẩn hóa.
+    
+    Returns:
+        DataFrame: DataFrame với cột scaled_features chứa vector đặc trưng đã chuẩn hóa.
+    """
+    scaler = MinMaxScaler(inputCol=input_col, outputCol=output_col)
+    scaler_model = scaler.fit(df)
+    df = scaler_model.transform(df)
     return df
 
 def create_label_index(df: DataFrame, input_col="Label_Category", output_col="label"):
