@@ -6,14 +6,16 @@ import enum
 from logger import initialize_logger, logger
 from training.random_forest import RandomForestModel
 from training.logistic_regression import LogisticRegressionModel
+from training.xgboost_model import XGBoostModel
 
 
 class TrainType(str, enum.Enum):
     RANDOM_FOREST = "random_forest"
     LOGISTIC_REGRESSION = "logistic_regression"
+    XGBOOST = "xgboost"
 
 
-train_type = TrainType.LOGISTIC_REGRESSION
+train_type = TrainType.XGBOOST
 os.makedirs("./log/", exist_ok=True)
 initialize_logger(log_file="./log/" + train_type.value + ".log", log_level=20)
 
@@ -77,6 +79,12 @@ if __name__ == "__main__":
         model = RandomForestModel(n_estimators=200, max_depth=15, max_features=None)
     elif train_type == TrainType.LOGISTIC_REGRESSION:
         model = LogisticRegressionModel(max_iter=15000, C=100, solver="sag")
+    elif train_type == TrainType.XGBOOST:
+        model = XGBoostModel(
+            n_estimators=200,
+            learning_rate=0.05,
+            max_depth=20,
+        )
     else:
         raise ValueError("Invalid train type")
 
