@@ -15,7 +15,7 @@ class TrainType(str, enum.Enum):
 
 train_type = TrainType.LOGISTIC_REGRESSION
 os.makedirs("./log/", exist_ok=True)
-initialize_logger(log_file="./log/" + train_type.value + ".log")
+initialize_logger(log_file="./log/" + train_type.value + ".log", log_level=20)
 
 
 if __name__ == "__main__":
@@ -74,20 +74,22 @@ if __name__ == "__main__":
 
     #region MODEL TRAINING
     if train_type == TrainType.RANDOM_FOREST:
-        model = RandomForestModel(n_estimators=100)
+        model = RandomForestModel(n_estimators=200, max_depth=15, max_features=None)
     elif train_type == TrainType.LOGISTIC_REGRESSION:
-        model = LogisticRegressionModel()
+        model = LogisticRegressionModel(max_iter=15000, C=100, solver="sag")
     else:
         raise ValueError("Invalid train type")
 
     start_time = time.time()
     model.train(train_df_selected, train_labels.Label)
     end_time = time.time()
+    model.save_model()
     logger.warning(f"{model.name} training time: {(end_time - start_time):.2f} seconds")
     #endregion
 
     #region MODEL EVALUATION
     start_time = time.time()
+    model.load_model()
     predictions = model.predict(test_df_selected)
     metrics = model.evaluate(test_labels.Label, predictions)
     end_time = time.time()

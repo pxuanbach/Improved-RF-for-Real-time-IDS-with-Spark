@@ -6,8 +6,15 @@ import seaborn as sns
 import os
 from typing import Dict, Any
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix, classification_report
+import joblib
+from pathlib import Path
 
 from logger import logger
+
+
+EVALUATION_DIR = "./data/model_evaluation"
+MODELS_DIR = "./data/saved_models"
+
 
 class BaseModel(ABC):
     def __init__(self, name: str):
@@ -16,7 +23,9 @@ class BaseModel(ABC):
         self.train_time = 0
         self.test_time = 0
         self.metrics = {}
-        self.output_dir = f"./data/model_evaluation/{name.lower()}"
+        self.output_dir = EVALUATION_DIR + f"/{name.lower()}"
+        self.model_path = Path(MODELS_DIR) / f"{name.lower()}.joblib"
+        os.makedirs(MODELS_DIR, exist_ok=True)
         os.makedirs(self.output_dir, exist_ok=True)
 
     @abstractmethod
@@ -37,7 +46,7 @@ class BaseModel(ABC):
         precision, recall, f1, _ = precision_recall_fscore_support(
             y_true, y_pred,
             average='weighted',
-            zero_division=0  # Explicitly set zero_division parameter
+            zero_division=1  # Explicitly set zero_division parameter
         )
 
         self.metrics = {
@@ -84,7 +93,7 @@ class BaseModel(ABC):
 
     def detailed_metrics(self, y_true: pd.Series, y_pred: pd.Series) -> None:
         """Calculate and log detailed metrics for each attack type"""
-        report = classification_report(y_true, y_pred, output_dict=True)
+        report = classification_report(y_true, y_pred, output_dict=True, zero_division=1)
         df_report = pd.DataFrame(report).transpose()
 
         output_path = os.path.join(self.output_dir, 'classification_report.csv')
@@ -101,3 +110,18 @@ class BaseModel(ABC):
 
     def get_metrics(self) -> Dict[str, Any]:
         return self.metrics
+
+    def save_model(self) -> None:
+        """Save trained model to disk"""
+        logger.info(f"Saving model to {self.model_path}")
+        joblib.dump(self.model, self.model_path)
+        logger.info("Model saved successfully")
+
+    def load_model(self) -> None:
+        """Load trained model from disk"""
+        if not self.model_path.exists():
+            raise FileNotFoundError(f"No saved model found at {self.model_path}")
+
+        logger.info(f"Loading model from {self.model_path}")
+        self.model = joblib.load(self.model_path)
+        logger.info("Model loaded successfully")

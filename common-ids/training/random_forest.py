@@ -2,22 +2,25 @@ import time
 import pandas as pd
 
 from sklearn.ensemble import RandomForestClassifier
-from typing import Dict, Any
+from typing import Dict, Any, Literal, Optional
 
 from logger import logger
 from .base_model import BaseModel
 
 
 class RandomForestModel(BaseModel):
-    def __init__(self, n_estimators: int = 100, random_state: int = 42):
-        super().__init__("RandomForest")
+    def __init__(
+        self,
+        n_estimators: int = 100,
+        random_state: int = 42,
+        max_features: float | Literal['sqrt', 'log2'] | None = 'sqrt',
+        max_depth: Optional[int] = None,
+    ):
+        super().__init__(f"random_forest_{n_estimators}_{max_depth}_{max_features}")
         self.model = RandomForestClassifier(
             n_estimators=n_estimators,
-            max_depth=None,  # Allow full depth
-            min_samples_split=2,
-            min_samples_leaf=1,
-            max_features='sqrt',
-            bootstrap=True,
+            max_depth=max_depth,  # Allow full depth
+            max_features=max_features,
             random_state=random_state,
             n_jobs=4,
             verbose=1

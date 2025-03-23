@@ -174,3 +174,5 @@ cython_debug/
 spark-cluster/minio/data/*
 checkpoints/
 *.csv.part*
+!classification_report.csv
+!training.log

@@ -1,4 +1,5 @@
 import time
+from typing import Literal
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 
@@ -7,14 +8,20 @@ from .base_model import BaseModel
 
 
 class LogisticRegressionModel(BaseModel):
-    def __init__(self, random_state: int = 42):
-        super().__init__("LogisticRegression")
+    def __init__(
+        self,
+        max_iter: int = 10000,
+        C: float = 0.1,
+        solver: Literal['lbfgs', 'liblinear', 'newton-cg', 'newton-cholesky', 'sag', 'saga'] = "saga",
+        random_state: int = 42
+    ):
+        super().__init__(f"logistic_regression_{max_iter}_{C}_{solver}")
         self.model = LogisticRegression(
-            C=1.0,
-            max_iter=1000,
+            C=C,
+            max_iter=max_iter,
             n_jobs=4,
             random_state=random_state,
-            solver="lbfgs",
+            solver=solver,
             verbose=1
         )
 
