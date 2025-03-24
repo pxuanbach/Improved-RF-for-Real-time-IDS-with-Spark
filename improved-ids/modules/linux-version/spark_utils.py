@@ -48,6 +48,9 @@ def create_spark_session(app_name, master="spark://127.0.0.1:7077"):
         .config("spark.sql.autoBroadcastJoinThreshold", 10 * 1024 * 1024) \
         .config("spark.executor.heartbeatInterval", "60s") \
         .config("spark.storage.blockManagerSlaveTimeoutMs", "1800000") \
+        .config("spark.log.level", "WARN")  \
         .getOrCreate()
     
+    # Đặt mức log cho SparkContext
+    spark.sparkContext.setLogLevel("WARN")
     return spark
