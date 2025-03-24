@@ -13,7 +13,7 @@ class DataNormalizer:
         self.train_labels = None
         self.test_labels = None
 
-    def split_data(self, df: pd.DataFrame) -> 'DataNormalizer':
+    def split_data(self, df: pd.DataFrame, test_size: float = 0.3) -> 'DataNormalizer':
         """Split data into training and testing sets"""
         logger.info("Splitting data into training and testing sets...")
 
@@ -26,7 +26,7 @@ class DataNormalizer:
 
         # split dataset - stratified
         x_train, x_test, y_train, y_test = train_test_split(
-            xs, ys, test_size=0.3, random_state=0, stratify=ys['Label']
+            xs, ys, test_size=test_size, random_state=0, stratify=ys['Label']
         )
 
         # Remove constant columns
