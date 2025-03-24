@@ -48,7 +48,7 @@ print(bcolors.OKGREEN + "✅ SMOTE applied successfully" + bcolors.ENDC)
 # Train-Test Split
 train_df, test_df = df_resampled.randomSplit([0.8, 0.2], seed=42)
 
-# Huấn luyện Random Forest 
+# Huấn luyện Random Forest
 rf = RandomForestClassifier(
     featuresCol="features",
     labelCol="label",

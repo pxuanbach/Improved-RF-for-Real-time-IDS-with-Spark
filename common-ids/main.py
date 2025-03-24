@@ -23,7 +23,7 @@ initialize_logger(log_file="./log/" + train_type.value + ".log", log_level=20)
 if __name__ == "__main__":
     from preprocessing import DataPreprocessor
     from normalization import DataNormalizer
-    from feature_selection import FeatureSelector, ReliefFSelector
+    from feature_selection import FeatureSelector, ReliefFSelector, RFSelector
 
     #region PREPROCESSING
     start_time = time.time()
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     #region NORMALIZATION & SPLITTING
     start_time = time.time()
     normalizer = DataNormalizer()
-    normalizer.split_data(processed_df).normalize_data()
+    normalizer.split_data(processed_df, test_size=0.2).normalize_data()
     train_df, train_labels = normalizer.get_train_data()
     test_df, test_labels = normalizer.get_test_data()
     end_time = time.time()
@@ -86,29 +86,42 @@ if __name__ == "__main__":
         from sklearn.preprocessing import LabelEncoder
         label_encoder = LabelEncoder()
 
-        subset_size = 20000  # Adjust this value based on your available memory
-        x_train_subset = train_df[:subset_size]
-        y_train_subset = train_labels[:subset_size]
-
         # Encode labels to numeric values
-        if isinstance(y_train_subset, pd.DataFrame):
-            y_train_encoded = label_encoder.fit_transform(y_train_subset['Label'])
+        if isinstance(train_labels, pd.DataFrame):
+            y_train_encoded = label_encoder.fit_transform(train_labels['Label'])
         else:
-            y_train_encoded = label_encoder.fit_transform(y_train_subset)
+            y_train_encoded = label_encoder.fit_transform(train_labels)
 
         # Perform feature selection
-        selector.fit(x_train_subset, y_train_encoded, n_features=22, n_neighbors=10)
+        selector.fit(train_df, y_train_encoded, n_features=22, n_neighbors=10)
 
         # Generate plots
         selector.plot_feature_scores()
         selector.plot_cumulative_scores()
 
         # Transform and save data
-        train_df_selected = selector.transform_and_save(train_df, processed_df, 'train')
-        test_df_selected = selector.transform_and_save(test_df, processed_df, 'test')
+        train_df_selected = selector.transform_and_save(train_df, 'train')
+        test_df_selected = selector.transform_and_save(test_df, 'test')
+
+    # Apply secondary feature selection with Random Forest
+    rf_selector = RFSelector()
+
+    if rf_selector.has_cached_features():
+        train_df_selected, test_df_selected = rf_selector.load_cached_features()
+    else:
+        # Fit RF selector on ReliefF-selected features
+        rf_selector.fit(train_df_selected, y_train_encoded, n_features=18, n_estimators=50, max_depth=10)
+
+        # Generate plots
+        rf_selector.plot_feature_scores()
+        rf_selector.plot_cumulative_scores()
+
+        # Transform and save data
+        train_df_selected = rf_selector.transform_and_save(train_df_selected, 'train')
+        test_df_selected = rf_selector.transform_and_save(test_df_selected, 'test')
 
     end_time = time.time()
-    logger.warning(f"ReliefF selection time: {(end_time - start_time):.2f} seconds")
+    logger.warning(f"Feature selection time: {(end_time - start_time):.2f} seconds")
     #endregion
 
 
