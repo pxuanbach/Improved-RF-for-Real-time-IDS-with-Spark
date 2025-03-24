@@ -7,15 +7,17 @@ from logger import initialize_logger, logger
 from training.random_forest import RandomForestModel
 from training.logistic_regression import LogisticRegressionModel
 from training.xgboost_model import XGBoostModel
+from training.gradient_boosting import GradientBoostingModel
 
 
 class TrainType(str, enum.Enum):
     RANDOM_FOREST = "random_forest"
     LOGISTIC_REGRESSION = "logistic_regression"
     XGBOOST = "xgboost"
+    GRADIENT_BOOSTING = "gradient_boosting"
 
 
-train_type = TrainType.XGBOOST
+train_type = TrainType.GRADIENT_BOOSTING
 os.makedirs("./log/", exist_ok=True)
 initialize_logger(log_file="./log/" + train_type.value + ".log", log_level=20)
 
@@ -135,6 +137,13 @@ if __name__ == "__main__":
             n_estimators=200,
             learning_rate=0.05,
             max_depth=20,
+        )
+    elif train_type == TrainType.GRADIENT_BOOSTING:
+        model = GradientBoostingModel(
+            n_estimators=200,
+            learning_rate=0.05,
+            max_depth=10,
+            subsample=0.8,
         )
     else:
         raise ValueError("Invalid train type")

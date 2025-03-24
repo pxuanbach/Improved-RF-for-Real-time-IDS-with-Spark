@@ -1,0 +1,108 @@
+2025-03-24 16:18:11,950 INFO: Loading preprocessed data from cache...
+2025-03-24 16:18:24,634 INFO: Cache file already exists.
+2025-03-24 16:18:24,634 WARNING: Preprocessing time: 12.68 seconds
+2025-03-24 16:18:24,634 INFO: Splitting data into training and testing sets...
+2025-03-24 16:18:35,931 INFO: Dropping 8 constant columns
+2025-03-24 16:18:36,307 INFO: Training set size: 2262246
+2025-03-24 16:18:36,307 INFO: Test set size: 565562
+2025-03-24 16:18:36,307 INFO: Remaining features: 70
+2025-03-24 16:18:38,173 WARNING: Normalization time: 13.54 seconds
+2025-03-24 16:18:38,173 INFO: Loading cached feature selection results...
+2025-03-24 16:18:44,042 INFO: Loading cached feature selection results...
+2025-03-24 16:18:48,864 WARNING: Feature selection time: 10.69 seconds
+2025-03-24 16:18:48,864 INFO: Training Gradient Boosting model (OneVsRest) on 2262246 samples with 18 features...
+2025-03-24 16:18:48,919 INFO: Number of unique classes: 12
+2025-03-24 16:18:48,919 INFO: Base classifier parameters: {'ccp_alpha': 0.0, 'criterion': 'friedman_mse', 'init': None, 'learning_rate': 0.05, 'loss': 'log_loss', 'max_depth': 10, 'max_features': 'sqrt', 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'min_samples_leaf': 1, 'min_samples_split': 2, 'min_weight_fraction_leaf': 0.0, 'n_estimators': 200, 'n_iter_no_change': None, 'random_state': 42, 'subsample': 0.8, 'tol': 0.0001, 'validation_fraction': 0.1, 'verbose': 0, 'warm_start': False}
+2025-03-24 17:17:49,053 INFO: Training completed in 3540.13 seconds
+2025-03-24 17:17:49,054 INFO: Average time per classifier: 295.01 seconds
+2025-03-24 17:17:49,058 INFO: Memory usage: 310.67 MB
+2025-03-24 17:17:49,058 INFO: Saving model to data\saved_models\gradient_boosting_200_0.05_10.joblib
+2025-03-24 17:17:49,590 INFO: Model saved successfully
+2025-03-24 17:17:49,590 WARNING: gradient_boosting_200_0.05_10 training time: 3540.19 seconds
+2025-03-24 17:17:49,590 INFO: Loading model from data\saved_models\gradient_boosting_200_0.05_10.joblib
+2025-03-24 17:17:50,145 INFO: Model loaded successfully
+2025-03-24 17:17:50,146 INFO: Making predictions...
+2025-03-24 17:18:31,399 INFO: Predictions completed in 41.25 seconds
+2025-03-24 17:18:33,330 INFO: Model Performance Metrics:
+2025-03-24 17:18:33,331 INFO: accuracy: 0.9699
+2025-03-24 17:18:33,331 INFO: precision: 0.9967
+2025-03-24 17:18:33,331 INFO: recall: 0.9699
+2025-03-24 17:18:33,331 INFO: f1: 0.9821
+2025-03-24 17:18:33,331 INFO: train_time: 3540.1345
+2025-03-24 17:18:33,331 INFO: test_time: 41.2530
+2025-03-24 17:18:34,691 INFO: Confusion matrix saved to ./data/model_evaluation/gradient_boosting_200_0.05_10\confusion_matrix.png
+2025-03-24 17:18:38,639 INFO: 
+Detailed Performance Metrics by Attack Type:
+2025-03-24 17:18:38,655 INFO: 
+BENIGN:
+2025-03-24 17:18:38,655 INFO:   Precision: 0.9984
+2025-03-24 17:18:38,655 INFO:   Recall: 0.9825
+2025-03-24 17:18:38,655 INFO:   F1-score: 0.9904
+2025-03-24 17:18:38,655 INFO:   Support: 454264
+2025-03-24 17:18:38,656 INFO: 
+Bot:
+2025-03-24 17:18:38,656 INFO:   Precision: 0.0100
+2025-03-24 17:18:38,656 INFO:   Recall: 0.3964
+2025-03-24 17:18:38,657 INFO:   F1-score: 0.0195
+2025-03-24 17:18:38,657 INFO:   Support: 391
+2025-03-24 17:18:38,657 INFO: 
+Brute Force:
+2025-03-24 17:18:38,658 INFO:   Precision: 0.3960
+2025-03-24 17:18:38,658 INFO:   Recall: 0.1329
+2025-03-24 17:18:38,658 INFO:   F1-score: 0.1990
+2025-03-24 17:18:38,659 INFO:   Support: 301
+2025-03-24 17:18:38,659 INFO: 
+DDoS:
+2025-03-24 17:18:38,660 INFO:   Precision: 0.9997
+2025-03-24 17:18:38,661 INFO:   Recall: 0.9993
+2025-03-24 17:18:38,661 INFO:   F1-score: 0.9995
+2025-03-24 17:18:38,661 INFO:   Support: 25605
+2025-03-24 17:18:38,661 INFO: 
+DoS GoldenEye:
+2025-03-24 17:18:38,661 INFO:   Precision: 0.9971
+2025-03-24 17:18:38,662 INFO:   Recall: 0.9932
+2025-03-24 17:18:38,662 INFO:   F1-score: 0.9951
+2025-03-24 17:18:38,662 INFO:   Support: 2059
+2025-03-24 17:18:38,662 INFO: 
+DoS Hulk:
+2025-03-24 17:18:38,663 INFO:   Precision: 0.9973
+2025-03-24 17:18:38,663 INFO:   Recall: 0.9992
+2025-03-24 17:18:38,664 INFO:   F1-score: 0.9983
+2025-03-24 17:18:38,664 INFO:   Support: 46025
+2025-03-24 17:18:38,664 INFO: 
+DoS Slowhttptest:
+2025-03-24 17:18:38,665 INFO:   Precision: 0.9882
+2025-03-24 17:18:38,665 INFO:   Recall: 0.9145
+2025-03-24 17:18:38,665 INFO:   F1-score: 0.9500
+2025-03-24 17:18:38,665 INFO:   Support: 1100
+2025-03-24 17:18:38,666 INFO: 
+DoS slowloris:
+2025-03-24 17:18:38,666 INFO:   Precision: 0.9954
+2025-03-24 17:18:38,666 INFO:   Recall: 0.7515
+2025-03-24 17:18:38,666 INFO:   F1-score: 0.8564
+2025-03-24 17:18:38,666 INFO:   Support: 1159
+2025-03-24 17:18:38,667 INFO: 
+FTP-Patator:
+2025-03-24 17:18:38,667 INFO:   Precision: 1.0000
+2025-03-24 17:18:38,667 INFO:   Recall: 0.9987
+2025-03-24 17:18:38,667 INFO:   F1-score: 0.9994
+2025-03-24 17:18:38,667 INFO:   Support: 1587
+2025-03-24 17:18:38,668 INFO: 
+PortScan:
+2025-03-24 17:18:38,669 INFO:   Precision: 0.9915
+2025-03-24 17:18:38,669 INFO:   Recall: 0.7474
+2025-03-24 17:18:38,670 INFO:   F1-score: 0.8523
+2025-03-24 17:18:38,670 INFO:   Support: 31761
+2025-03-24 17:18:38,670 INFO: 
+SSH-Patator:
+2025-03-24 17:18:38,670 INFO:   Precision: 1.0000
+2025-03-24 17:18:38,670 INFO:   Recall: 0.9992
+2025-03-24 17:18:38,672 INFO:   F1-score: 0.9996
+2025-03-24 17:18:38,672 INFO:   Support: 1180
+2025-03-24 17:18:38,673 INFO: 
+XSS:
+2025-03-24 17:18:38,673 INFO:   Precision: 0.0162
+2025-03-24 17:18:38,674 INFO:   Recall: 0.0692
+2025-03-24 17:18:38,674 INFO:   F1-score: 0.0262
+2025-03-24 17:18:38,675 INFO:   Support: 130
+2025-03-24 17:18:38,675 WARNING: gradient_boosting_200_0.05_10 evaluation time: 49.08 seconds
