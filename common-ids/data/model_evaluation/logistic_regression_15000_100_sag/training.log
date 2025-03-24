@@ -1,105 +1,106 @@
-2025-03-23 12:23:31,318 INFO: Loading preprocessed data from cache...
-2025-03-23 12:23:43,821 INFO: Cache file already exists.
-2025-03-23 12:23:43,822 WARNING: Preprocessing time: 12.50 seconds
-2025-03-23 12:23:43,822 INFO: Splitting data into training and testing sets...
-2025-03-23 12:23:54,097 INFO: Dropping 8 constant columns
-2025-03-23 12:23:54,455 INFO: Training set size: 1979465
-2025-03-23 12:23:54,455 INFO: Test set size: 848343
-2025-03-23 12:23:54,455 INFO: Remaining features: 70
-2025-03-23 12:23:56,218 WARNING: Normalization time: 12.40 seconds
-2025-03-23 12:23:56,219 INFO: Loading cached feature selection results...
-2025-03-23 12:24:06,157 WARNING: Feature selection time: 9.94 seconds
-2025-03-23 12:24:06,158 INFO: Training Logistic Regression model on 1979465 samples with 40 features...
-2025-03-23 12:24:06,158 INFO: Model parameters: {'C': 100, 'class_weight': None, 'dual': False, 'fit_intercept': True, 'intercept_scaling': 1, 'l1_ratio': None, 'max_iter': 15000, 'multi_class': 'deprecated', 'n_jobs': 4, 'penalty': 'l2', 'random_state': 42, 'solver': 'sag', 'tol': 0.0001, 'verbose': 1, 'warm_start': False}
-2025-03-23 13:06:34,061 INFO: Training completed in 2547.90 seconds
-2025-03-23 13:06:34,062 INFO: Memory usage: 604.08 MB
-2025-03-23 13:06:34,062 INFO: Saving model to data\saved_models\logistic_regression_15000_100_sag.joblib
-2025-03-23 13:06:34,063 INFO: Model saved successfully
-2025-03-23 13:06:34,064 WARNING: logistic_regression_15000_100_sag training time: 2547.90 seconds
-2025-03-23 13:06:34,064 INFO: Loading model from data\saved_models\logistic_regression_15000_100_sag.joblib
-2025-03-23 13:06:34,073 INFO: Model loaded successfully
-2025-03-23 13:06:34,073 INFO: Making predictions...
-2025-03-23 13:06:34,190 INFO: Predictions completed in 0.12 seconds
-2025-03-23 13:06:37,564 INFO: Model Performance Metrics:
-2025-03-23 13:06:37,565 INFO: accuracy: 0.9647
-2025-03-23 13:06:37,565 INFO: precision: 0.9681
-2025-03-23 13:06:37,565 INFO: recall: 0.9647
-2025-03-23 13:06:37,565 INFO: f1: 0.9647
-2025-03-23 13:06:37,565 INFO: train_time: 2547.9030
-2025-03-23 13:06:37,565 INFO: test_time: 0.1176
-2025-03-23 13:06:39,347 INFO: Confusion matrix saved to ./data/model_evaluation/logistic_regression_15000_100_sag\confusion_matrix.png
-2025-03-23 13:06:45,667 INFO: 
+2025-03-24 11:36:23,533 INFO: Loading preprocessed data from cache...
+2025-03-24 11:36:36,711 INFO: Cache file already exists.
+2025-03-24 11:36:36,711 WARNING: Preprocessing time: 13.18 seconds
+2025-03-24 11:36:36,711 INFO: Splitting data into training and testing sets...
+2025-03-24 11:36:46,303 INFO: Dropping 8 constant columns
+2025-03-24 11:36:46,541 INFO: Training set size: 2262246
+2025-03-24 11:36:46,541 INFO: Test set size: 565562
+2025-03-24 11:36:46,541 INFO: Remaining features: 70
+2025-03-24 11:36:47,726 WARNING: Normalization time: 11.02 seconds
+2025-03-24 11:36:47,727 INFO: Loading cached feature selection results...
+2025-03-24 11:36:55,609 INFO: Loading cached feature selection results...
+2025-03-24 11:37:02,156 WARNING: Feature selection time: 14.43 seconds
+2025-03-24 11:37:02,156 INFO: Training Logistic Regression model on 2262246 samples with 18 features...
+2025-03-24 11:37:02,157 INFO: Model parameters: {'C': 100, 'class_weight': None, 'dual': False, 'fit_intercept': True, 'intercept_scaling': 1, 'l1_ratio': None, 'max_iter': 15000, 'multi_class': 'deprecated', 'n_jobs': 4, 'penalty': 'l2', 'random_state': 42, 'solver': 'sag', 'tol': 0.0001, 'verbose': 1, 'warm_start': False}
+2025-03-24 12:01:01,679 INFO: Training completed in 1439.52 seconds
+2025-03-24 12:01:01,680 INFO: Memory usage: 310.67 MB
+2025-03-24 12:01:01,681 INFO: Saving model to data/saved_models/logistic_regression_15000_100_sag.joblib
+2025-03-24 12:01:01,682 INFO: Model saved successfully
+2025-03-24 12:01:01,682 WARNING: logistic_regression_15000_100_sag training time: 1439.52 seconds
+2025-03-24 12:01:01,682 INFO: Loading model from data/saved_models/logistic_regression_15000_100_sag.joblib
+2025-03-24 12:01:01,683 INFO: Model loaded successfully
+2025-03-24 12:01:01,683 INFO: Making predictions...
+2025-03-24 12:01:01,774 INFO: Predictions completed in 0.09 seconds
+2025-03-24 12:01:05,209 INFO: Model Performance Metrics:
+2025-03-24 12:01:05,210 INFO: accuracy: 0.9456
+2025-03-24 12:01:05,210 INFO: precision: 0.9489
+2025-03-24 12:01:05,210 INFO: recall: 0.9456
+2025-03-24 12:01:05,210 INFO: f1: 0.9425
+2025-03-24 12:01:05,210 INFO: train_time: 1439.5221
+2025-03-24 12:01:05,210 INFO: test_time: 0.0909
+2025-03-24 12:01:07,160 INFO: Confusion matrix saved to ./data/model_evaluation/logistic_regression_15000_100_sag/confusion_matrix.png
+2025-03-24 12:01:12,539 INFO: 
 Detailed Performance Metrics by Attack Type:
-2025-03-23 13:06:45,688 INFO: 
+2025-03-24 12:01:12,566 INFO: 
 BENIGN:
-2025-03-23 13:06:45,689 INFO:   Precision: 0.9846
-2025-03-23 13:06:45,689 INFO:   Recall: 0.9728
-2025-03-23 13:06:45,689 INFO:   F1-score: 0.9787
-2025-03-23 13:06:45,690 INFO:   Support: 681396
-2025-03-23 13:06:45,690 INFO: 
+2025-03-24 12:01:12,567 INFO:   Precision: 0.9818
+2025-03-24 12:01:12,567 INFO:   Recall: 0.9728
+2025-03-24 12:01:12,567 INFO:   F1-score: 0.9772
+2025-03-24 12:01:12,567 INFO:   Support: 454264
+2025-03-24 12:01:12,567 INFO: 
 Bot:
-2025-03-23 13:06:45,690 INFO:   Precision: 1.0000
-2025-03-23 13:06:45,690 INFO:   Recall: 0.0017
-2025-03-23 13:06:45,690 INFO:   F1-score: 0.0034
-2025-03-23 13:06:45,691 INFO:   Support: 587
-2025-03-23 13:06:45,691 INFO: 
+2025-03-24 12:01:12,567 INFO:   Precision: 1.0000
+2025-03-24 12:01:12,567 INFO:   Recall: 0.0000
+2025-03-24 12:01:12,567 INFO:   F1-score: 0.0000
+2025-03-24 12:01:12,568 INFO:   Support: 391
+2025-03-24 12:01:12,568 INFO: 
 Brute Force:
-2025-03-23 13:06:45,691 INFO:   Precision: 0.0000
-2025-03-23 13:06:45,691 INFO:   Recall: 0.0000
-2025-03-23 13:06:45,691 INFO:   F1-score: 0.0000
-2025-03-23 13:06:45,691 INFO:   Support: 452
-2025-03-23 13:06:45,691 INFO: 
+2025-03-24 12:01:12,568 INFO:   Precision: 1.0000
+2025-03-24 12:01:12,568 INFO:   Recall: 0.0000
+2025-03-24 12:01:12,568 INFO:   F1-score: 0.0000
+2025-03-24 12:01:12,568 INFO:   Support: 301
+2025-03-24 12:01:12,568 INFO: 
 DDoS:
-2025-03-23 13:06:45,692 INFO:   Precision: 0.9894
-2025-03-23 13:06:45,692 INFO:   Recall: 0.9711
-2025-03-23 13:06:45,692 INFO:   F1-score: 0.9801
-2025-03-23 13:06:45,692 INFO:   Support: 38408
-2025-03-23 13:06:45,692 INFO: 
+2025-03-24 12:01:12,568 INFO:   Precision: 0.9704
+2025-03-24 12:01:12,568 INFO:   Recall: 0.5912
+2025-03-24 12:01:12,569 INFO:   F1-score: 0.7348
+2025-03-24 12:01:12,569 INFO:   Support: 25605
+2025-03-24 12:01:12,569 INFO: 
 DoS GoldenEye:
-2025-03-23 13:06:45,692 INFO:   Precision: 0.9657
-2025-03-23 13:06:45,692 INFO:   Recall: 0.8663
-2025-03-23 13:06:45,693 INFO:   F1-score: 0.9133
-2025-03-23 13:06:45,693 INFO:   Support: 3088
-2025-03-23 13:06:45,693 INFO: 
+2025-03-24 12:01:12,569 INFO:   Precision: 0.8229
+2025-03-24 12:01:12,569 INFO:   Recall: 0.6523
+2025-03-24 12:01:12,569 INFO:   F1-score: 0.7277
+2025-03-24 12:01:12,569 INFO:   Support: 2059
+2025-03-24 12:01:12,569 INFO: 
 DoS Hulk:
-2025-03-23 13:06:45,693 INFO:   Precision: 0.9591
-2025-03-23 13:06:45,693 INFO:   Recall: 0.9119
-2025-03-23 13:06:45,693 INFO:   F1-score: 0.9349
-2025-03-23 13:06:45,693 INFO:   Support: 69037
-2025-03-23 13:06:45,693 INFO: 
+2025-03-24 12:01:12,569 INFO:   Precision: 0.7623
+2025-03-24 12:01:12,569 INFO:   Recall: 0.9427
+2025-03-24 12:01:12,569 INFO:   F1-score: 0.8430
+2025-03-24 12:01:12,569 INFO:   Support: 46025
+2025-03-24 12:01:12,569 INFO: 
 DoS Slowhttptest:
-2025-03-23 13:06:45,694 INFO:   Precision: 0.9367
-2025-03-23 13:06:45,694 INFO:   Recall: 0.8794
-2025-03-23 13:06:45,694 INFO:   F1-score: 0.9072
-2025-03-23 13:06:45,694 INFO:   Support: 1650
-2025-03-23 13:06:45,694 INFO: 
+2025-03-24 12:01:12,570 INFO:   Precision: 0.6659
+2025-03-24 12:01:12,570 INFO:   Recall: 0.2482
+2025-03-24 12:01:12,570 INFO:   F1-score: 0.3616
+2025-03-24 12:01:12,570 INFO:   Support: 1100
+2025-03-24 12:01:12,570 INFO: 
 DoS slowloris:
-2025-03-23 13:06:45,694 INFO:   Precision: 0.8708
-2025-03-23 13:06:45,694 INFO:   Recall: 0.5348
-2025-03-23 13:06:45,694 INFO:   F1-score: 0.6626
-2025-03-23 13:06:45,694 INFO:   Support: 1739
-2025-03-23 13:06:45,695 INFO: 
+2025-03-24 12:01:12,570 INFO:   Precision: 0.9228
+2025-03-24 12:01:12,570 INFO:   Recall: 0.4849
+2025-03-24 12:01:12,570 INFO:   F1-score: 0.6357
+2025-03-24 12:01:12,570 INFO:   Support: 1159
+2025-03-24 12:01:12,570 INFO: 
 FTP-Patator:
-2025-03-23 13:06:45,695 INFO:   Precision: 0.9328
-2025-03-23 13:06:45,695 INFO:   Recall: 0.9975
-2025-03-23 13:06:45,695 INFO:   F1-score: 0.9641
-2025-03-23 13:06:45,695 INFO:   Support: 2380
-2025-03-23 13:06:45,695 INFO: 
+2025-03-24 12:01:12,570 INFO:   Precision: 0.0000
+2025-03-24 12:01:12,570 INFO:   Recall: 0.0000
+2025-03-24 12:01:12,570 INFO:   F1-score: 0.0000
+2025-03-24 12:01:12,570 INFO:   Support: 1587
+2025-03-24 12:01:12,570 INFO: 
 PortScan:
-2025-03-23 13:06:45,695 INFO:   Precision: 0.7459
-2025-03-23 13:06:45,695 INFO:   Recall: 0.9859
-2025-03-23 13:06:45,695 INFO:   F1-score: 0.8493
-2025-03-23 13:06:45,695 INFO:   Support: 47641
-2025-03-23 13:06:45,695 INFO: 
+2025-03-24 12:01:12,571 INFO:   Precision: 0.7984
+2025-03-24 12:01:12,571 INFO:   Recall: 0.9955
+2025-03-24 12:01:12,571 INFO:   F1-score: 0.8861
+2025-03-24 12:01:12,571 INFO:   Support: 31761
+2025-03-24 12:01:12,571 INFO: 
 SSH-Patator:
-2025-03-23 13:06:45,696 INFO:   Precision: 0.9751
-2025-03-23 13:06:45,696 INFO:   Recall: 0.4867
-2025-03-23 13:06:45,696 INFO:   F1-score: 0.6493
-2025-03-23 13:06:45,696 INFO:   Support: 1769
-2025-03-23 13:06:45,696 INFO: 
+2025-03-24 12:01:12,571 INFO:   Precision: 0.9005
+2025-03-24 12:01:12,571 INFO:   Recall: 0.4831
+2025-03-24 12:01:12,571 INFO:   F1-score: 0.6288
+2025-03-24 12:01:12,571 INFO:   Support: 1180
+2025-03-24 12:01:12,571 INFO: 
 XSS:
-2025-03-23 13:06:45,696 INFO:   Precision: 0.0000
-2025-03-23 13:06:45,696 INFO:   Recall: 0.0000
-2025-03-23 13:06:45,696 INFO:   F1-score: 0.0000
-2025-03-23 13:06:45,697 INFO:   Support: 196
-2025-03-23 13:06:45,697 WARNING: logistic_regression_15000_100_sag evaluation time: 11.63 seconds
+2025-03-24 12:01:12,571 INFO:   Precision: 1.0000
+2025-03-24 12:01:12,571 INFO:   Recall: 0.0000
+2025-03-24 12:01:12,571 INFO:   F1-score: 0.0000
+2025-03-24 12:01:12,571 INFO:   Support: 130
+2025-03-24 12:01:12,571 WARNING: logistic_regression_15000_100_sag evaluation time: 10.89 seconds
