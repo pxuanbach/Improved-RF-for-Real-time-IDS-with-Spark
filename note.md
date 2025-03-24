@@ -388,7 +388,7 @@ Với việc đang sử dụng bộ dữ liệu **CICIDS2017**, tôi sẽ phân 
 | Tham số               | Giá trị phổ biến  | Giá trị trong scikit-learn | Giá trị trong Spark            | Ghi chú                             |
 | --------------------- | ----------------- | -------------------------- | ------------------------------ | ----------------------------------- |
 | **n_estimators**      | 100 – 500         | `n_estimators=200`         | `numTrees=200`                 | Số cây trong mô hình                |
-| **max_depth**         | 10 – 50           | `max_depth=42`             | `maxDepth=42`                  | Độ sâu tối đa của mỗi cây           |
+| **max_depth**         | 10 – 50           | `max_depth=15`             | `maxDepth=15`                  | Độ sâu tối đa của mỗi cây           |
 | **min_samples_split** | 2 – 10            | `min_samples_split=2`      | `minInstancesPerNode=2`        | Số mẫu tối thiểu để chia node       |
 | **max_features**      | `sqrt`, `log2`    | `max_features="sqrt"`      | `featureSubsetStrategy="sqrt"` | Số đặc trưng tối đa khi chia node   |
 | **criterion**         | `gini`, `entropy` | `criterion="gini"`         | `impurity="gini"`              | Tiêu chí để đo độ không thuần khiết |
@@ -396,7 +396,7 @@ Với việc đang sử dụng bộ dữ liệu **CICIDS2017**, tôi sẽ phân 
 
 > 📌 **Ghi chú**:
 >
-> - Trong Spark MLlib, các tham số tương ứng là `numTrees=200` và `maxDepth=42`.
+> - Trong Spark MLlib, các tham số tương ứng là `numTrees=200` và `maxDepth=15` vì spark chỉ hỗ trợ tối đa max depth = 30.
 > - Nguồn tham khảo: [IEEE 10835438](https://ieeexplore.ieee.org/abstract/document/10835438), [arXiv 2411.03354](https://arxiv.org/pdf/2411.03354)
 
 ---
