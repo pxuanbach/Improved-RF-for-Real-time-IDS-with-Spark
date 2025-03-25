@@ -14,6 +14,7 @@ from pyspark.ml.classification import RandomForestClassifier
 from pyspark.sql.functions import udf, lit
 from pyspark.sql.types import DoubleType
 from pyspark.ml.feature import VectorAssembler
+from pyspark.ml.linalg import Vectors
 from spark_utils import create_spark_session
 from model_utils import evaluate_model, bcolors
 from data_preprocessing import preprocess_data, create_label_index, reduce_dimensions, handle_nan_infinity, create_feature_vector, load_metadata
@@ -52,18 +53,32 @@ end_time = time.time()
 execution_times["spark_session_creation"] = end_time - start_time
 print(bcolors.OKCYAN + f"⏳ Spark session creation took {end_time - start_time:.2f} seconds" + bcolors.ENDC)
 
-# Load dữ liệu đã giảm chiều
+# Tạo mock data thay vì load từ S3
 start_time = time.time()
-reduced_data_path = "s3a://mybucket/preprocessed_data/reduced_data.parquet"
-df_reduced = spark.read.parquet(reduced_data_path)
-print(bcolors.OKGREEN + f"✅ Loaded reduced data from {reduced_data_path}" + bcolors.ENDC)
-end_time = time.time()
-execution_times["load_reduced_data"] = end_time - start_time
-print(bcolors.OKCYAN + f"⏳ Loading reduced data took {end_time - start_time:.2f} seconds" + bcolors.ENDC)
+print(bcolors.OKCYAN + "⏳ Creating mock data..." + bcolors.ENDC)
 
-# Load metadata
+# Tạo dữ liệu giả: 100 mẫu, 10 đặc trưng, 3 lớp
+np.random.seed(42)
+num_samples = 100
+num_features = 10
+num_classes = 3
+
+# Tạo đặc trưng ngẫu nhiên
+features = np.random.randn(num_samples, num_features)
+labels = np.random.randint(0, num_classes, num_samples)
+
+# Chuyển thành Spark DataFrame
+mock_data = [(Vectors.dense(features[i]), float(labels[i])) for i in range(num_samples)]
+df_reduced = spark.createDataFrame(mock_data, ["features", "label"])
+print(bcolors.OKGREEN + f"✅ Created mock data with {num_samples} samples, {num_features} features, {num_classes} classes" + bcolors.ENDC)
+end_time = time.time()
+execution_times["create_mock_data"] = end_time - start_time
+print(bcolors.OKCYAN + f"⏳ Creating mock data took {end_time - start_time:.2f} seconds" + bcolors.ENDC)
+
+# Tạo metadata giả
 start_time = time.time()
-global_top_features, label_to_name = load_metadata(spark)
+global_top_features = [f"feature_{i}" for i in range(num_features)]
+label_to_name = {0: "normal", 1: "attack", 2: "botnet"}
 print(bcolors.OKGREEN + f"✅ Loaded {len(global_top_features)} global top features: {global_top_features}" + bcolors.ENDC)
 print(bcolors.OKGREEN + "✅ Loaded label mapping:" + bcolors.ENDC)
 for index, label in label_to_name.items():
@@ -72,31 +87,30 @@ end_time = time.time()
 execution_times["load_metadata"] = end_time - start_time
 print(bcolors.OKCYAN + f"⏳ Loading metadata took {end_time - start_time:.2f} seconds" + bcolors.ENDC)
 
-# Chọn lọc đặc trưng bổ sung bằng RFSelector
+# Chọn lọc đặc trưng bổ sung bằng RFSelector (chọn 5 đặc trưng thay vì 18 để nhanh hơn)
 start_time = time.time()
 df_resampled = df_reduced
-print(bcolors.OKCYAN + "⏳ Selecting top 18 features using RFSelector..." + bcolors.ENDC)
+print(bcolors.OKCYAN + "⏳ Selecting top 5 features using RFSelector..." + bcolors.ENDC)
 rf_selector = RandomForestClassifier(
     featuresCol="features",
     labelCol="label",
-    numTrees=100,
-    maxDepth=20,
+    numTrees=10,
+    maxDepth=5,
     seed=42
 )
 rf_selector_model = rf_selector.fit(df_resampled)
 feature_importances = rf_selector_model.featureImportances
 importance_with_index = [(importance, index) for index, importance in enumerate(feature_importances)]
 importance_with_index.sort(reverse=True)
-selected_indices = [index for _, index in importance_with_index[:18]]
+selected_indices = [index for _, index in importance_with_index[:5]]
 selected_features = [global_top_features[i] for i in selected_indices]
-print(bcolors.OKGREEN + f"✅ Selected 18 features: {selected_features}" + bcolors.ENDC)
+print(bcolors.OKGREEN + f"✅ Selected 5 features: {selected_features}" + bcolors.ENDC)
 
-# Lưu danh sách 18 đặc trưng được chọn vào S3
-selected_features_path = "s3a://mybucket/models/selected_features_18.parquet"
-spark.createDataFrame([(selected_features,)], ["features"]).write.mode("overwrite").parquet(selected_features_path)
-print(bcolors.OKGREEN + f"✅ Saved selected features to {selected_features_path}" + bcolors.ENDC)
+# Lưu danh sách đặc trưng được chọn (giả lập lưu vào S3)
+selected_features_path = "s3a://mybucket/models/selected_features_5.parquet"
+print(bcolors.OKGREEN + f"✅ (Mock) Saved selected features to {selected_features_path}" + bcolors.ENDC)
 
-# Cập nhật Spark DataFrame để chỉ chứa 18 đặc trưng được chọn
+# Cập nhật Spark DataFrame để chỉ chứa 5 đặc trưng được chọn
 def extract_feature(vector, index):
     return float(vector[index])
 
@@ -113,7 +127,7 @@ df_resampled = df_resampled.select(columns_to_keep)
 
 assembler = VectorAssembler(inputCols=selected_features, outputCol="features")
 df_resampled = assembler.transform(df_resampled).select("features", "label")
-print(bcolors.OKGREEN + "✅ Updated DataFrame with 18 selected features" + bcolors.ENDC)
+print(bcolors.OKGREEN + "✅ Updated DataFrame with 5 selected features" + bcolors.ENDC)
 end_time = time.time()
 execution_times["rf_selector"] = end_time - start_time
 print(bcolors.OKCYAN + f"⏳ RFSelector processing took {end_time - start_time:.2f} seconds" + bcolors.ENDC)
@@ -130,8 +144,8 @@ start_time = time.time()
 rf = RandomForestClassifier(
     featuresCol="features",
     labelCol="label",
-    numTrees=200,
-    maxDepth=15,
+    numTrees=5,
+    maxDepth=3,
     minInstancesPerNode=2,
     featureSubsetStrategy="sqrt",
     impurity="gini",
@@ -143,11 +157,10 @@ end_time = time.time()
 execution_times["training"] = end_time - start_time
 print(bcolors.OKGREEN + f"✅ Training completed in {execution_times['training']:.2f} seconds" + bcolors.ENDC)
 
-# Lưu mô hình
+# Lưu mô hình (giả lập lưu vào S3)
 start_time = time.time()
 model_path = "s3a://mybucket/models/random_forest_model"
-rf_model.write().overwrite().save(model_path)
-print(bcolors.OKGREEN + f"✅ Model saved to {model_path}" + bcolors.ENDC)
+print(bcolors.OKGREEN + f"✅ (Mock) Model saved to {model_path}" + bcolors.ENDC)
 end_time = time.time()
 execution_times["save_model"] = end_time - start_time
 print(bcolors.OKCYAN + f"⏳ Saving model took {end_time - start_time:.2f} seconds" + bcolors.ENDC)
@@ -172,37 +185,27 @@ end_time = time.time()
 execution_times["evaluation"] = end_time - start_time
 print(bcolors.OKCYAN + f"⏳ Model evaluation took {end_time - start_time:.2f} seconds" + bcolors.ENDC)
 
-# Tính và vẽ confusion matrix (dạng phần trăm)
+# Tính và vẽ confusion matrix
 start_time = time.time()
-print(bcolors.OKCYAN + "⏳ Computing and plotting confusion matrix (in percentage)..." + bcolors.ENDC)
+print(bcolors.OKCYAN + "⏳ Computing and plotting confusion matrix..." + bcolors.ENDC)
 
-# Thu thập nhãn thực tế và nhãn dự đoán
 y_true = predictions.select("label").rdd.flatMap(lambda x: x).collect()
 y_pred = predictions.select("prediction").rdd.flatMap(lambda x: x).collect()
 
-# Tính confusion matrix
 cm = confusion_matrix(y_true, y_pred)
+labels = [label_to_name[i] for i in range(len(label_to_name))]
 
-# Chuẩn hóa confusion matrix thành phần trăm (theo hàng)
-cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-cm_normalized = np.nan_to_num(cm_normalized)  # Thay NaN bằng 0 nếu có hàng nào không có mẫu
-
-# Lấy danh sách nhãn từ label_to_name và sắp xếp theo chỉ số
-labels = [label_to_name[i] for i in sorted(label_to_name.keys())]
-
-# Vẽ confusion matrix (dạng phần trăm)
-plt.figure(figsize=(12, 8))
-sns.heatmap(cm_normalized, annot=True, fmt='.2%', cmap='Blues', xticklabels=labels, yticklabels=labels)
-plt.title('Confusion Matrix (%)')
-plt.xlabel('Predicted Label')
-plt.ylabel('True Label')
+plt.figure(figsize=(10, 8))
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=labels, yticklabels=labels)
+plt.title("Confusion Matrix")
+plt.xlabel("Predicted")
+plt.ylabel("True")
 plt.xticks(rotation=45, ha="right")
 plt.yticks(rotation=0)
 plt.tight_layout()
 
-# Lưu confusion matrix dưới dạng hình ảnh
 cm_path = os.path.join(output_dir, "confusion_matrix.png")
-plt.savefig(cm_path, dpi=300)
+plt.savefig(cm_path)
 plt.close()
 print(bcolors.OKGREEN + f"✅ Confusion matrix saved to {cm_path}" + bcolors.ENDC)
 end_time = time.time()
