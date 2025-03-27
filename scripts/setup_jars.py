@@ -12,7 +12,13 @@ jar_urls = {
     "aws-java-sdk-bundle-1.11.1026.jar": "https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.11.1026/aws-java-sdk-bundle-1.11.1026.jar",
     "guava-30.1-jre.jar": "https://repo1.maven.org/maven2/com/google/guava/guava/30.1-jre/guava-30.1-jre.jar",
     "hadoop-common-3.3.6.jar": "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-common/3.3.6/hadoop-common-3.3.6.jar",
-    "hadoop-client-3.3.6.jar": "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-client/3.3.6/hadoop-client-3.3.6.jar"
+    "hadoop-client-3.3.6.jar": "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-client/3.3.6/hadoop-client-3.3.6.jar",
+
+    "hadoop-client-api-3.3.6.jar": "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-client-api/3.3.6/hadoop-client-api-3.3.6.jar",  # Thêm từ Dockerfile
+    "hadoop-client-runtime-3.3.6.jar": "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-client-runtime/3.3.6/hadoop-client-runtime-3.3.6.jar",  # Thêm từ Dockerfile
+    "hadoop-yarn-server-web-proxy-3.3.6.jar": "https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-yarn-server-web-proxy/3.3.6/hadoop-yarn-server-web-proxy-3.3.6.jar",  # Thêm từ Dockerfile
+    "xgboost4j-spark_2.12-2.0.3.jar": "https://repo1.maven.org/maven2/ml/dmlc/xgboost4j-spark_2.12/2.0.3/xgboost4j-spark_2.12-2.0.3.jar",  # Thêm từ Dockerfile
+    "xgboost4j_2.12-2.0.3.jar": "https://repo1.maven.org/maven2/ml/dmlc/xgboost4j_2.12/2.0.3/xgboost4j_2.12-2.0.3.jar"
 }
 HADOOP_VERSION = "3.2.0"
 HADOOP_HOME_DEFAULT = os.path.join(os.getcwd(), f"hadoop-{HADOOP_VERSION}")

@@ -86,6 +86,32 @@ services:
     networks:
       - spark-network
 
+  spark-driver:
+    build:
+      context: ./spark
+      dockerfile: Dockerfile
+    command: 
+      sh -c "tail -f /dev/null"
+    depends_on:
+      - spark-master
+      - spark-worker  # Đảm bảo worker đã khởi động
+    environment:
+      - SPARK_MODE=driver
+      - SPARK_MASTER=spark://spark-master:7077
+      - RABIT_TRACKER_IP=172.18.0.4  # Thêm để hỗ trợ XGBoost
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 6.2G
+    volumes:
+      - ../improved-ids:/opt/spark-data
+    networks:
+      - spark-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    user: "0:0"  # Run as root to avoid permission issues
+    
 networks:
   spark-network:
     driver: bridge
