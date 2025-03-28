@@ -7,13 +7,12 @@ from sklearn.preprocessing import LabelEncoder
 from logger import logger
 from .base_model import BaseModel
 
-
 # https://www.dpss.inesc-id.pt/~mpc/pubs/XGBoost_chapter.pdf
 class XGBoostModel(BaseModel):
     def __init__(
         self,
         n_estimators: int = 100,
-        learning_rate: float = 0.1,
+        learning_rate: float = 0.5,
         max_depth: int = 6,
         random_state: int = 42,
     ):
@@ -24,8 +23,10 @@ class XGBoostModel(BaseModel):
             learning_rate=learning_rate,
             max_depth=max_depth,
             random_state=random_state,
-            n_jobs=4,
-            verbosity=1
+            n_jobs=1,
+            verbosity=1,
+            subsample=0.8,    
+            colsample_bytree=0.8 
         )
         self.label_encoder = LabelEncoder()
 
