@@ -21,9 +21,6 @@ class RandomForestModel(BaseModel):
             n_estimators=n_estimators,
             max_depth=max_depth,  # Allow full depth
             max_features=max_features,
-            min_samples_split=10,      # Tăng số lượng mẫu tối thiểu để split
-            min_samples_leaf=5,        # Tăng số lượng mẫu tối thiểu ở leaf
-            bootstrap=True,
             random_state=random_state,
             criterion=criterion,
             n_jobs=1,
