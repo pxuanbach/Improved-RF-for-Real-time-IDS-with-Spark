@@ -19,10 +19,11 @@ class LogisticRegressionModel(BaseModel):
         self.model = LogisticRegression(
             C=C,
             max_iter=max_iter,
-            n_jobs=4,
+            n_jobs=1,
             random_state=random_state,
             solver=solver,
-            verbose=1
+            verbose=1,
+            multi_class="multinomial"
         )
 
     def train(self, X_train: pd.DataFrame, y_train: pd.Series) -> None:
