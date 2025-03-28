@@ -1,0 +1,82 @@
+2025-03-28 12:00:42,559 INFO: Loading preprocessed data from cache...
+2025-03-28 12:00:53,238 INFO: Cache file already exists.
+2025-03-28 12:00:53,238 WARNING: Preprocessing time: 10.68 seconds
+2025-03-28 12:00:53,238 INFO: Splitting data into training and testing sets...
+2025-03-28 12:01:03,157 INFO: Dropping 8 constant columns
+2025-03-28 12:01:03,501 INFO: Training set size: 2262246
+2025-03-28 12:01:03,501 INFO: Test set size: 565562
+2025-03-28 12:01:03,501 INFO: Remaining features: 70
+2025-03-28 12:01:05,244 WARNING: Normalization time: 12.01 seconds
+2025-03-28 12:01:05,246 INFO: Loading cached feature selection results...
+2025-03-28 12:01:13,636 WARNING: Feature selection time: 8.39 seconds
+2025-03-28 12:01:13,636 INFO: Training Random Forest model on 2262246 samples with 40 features...
+2025-03-28 12:01:13,637 INFO: Model parameters: {'bootstrap': True, 'ccp_alpha': 0.0, 'class_weight': None, 'criterion': 'gini', 'max_depth': 15, 'max_features': 'sqrt', 'max_leaf_nodes': None, 'max_samples': None, 'min_impurity_decrease': 0.0, 'min_samples_leaf': 5, 'min_samples_split': 10, 'min_weight_fraction_leaf': 0.0, 'monotonic_cst': None, 'n_estimators': 200, 'n_jobs': 1, 'oob_score': False, 'random_state': 42, 'verbose': 1, 'warm_start': False}
+2025-03-28 12:17:48,165 INFO: Training completed in 994.53 seconds
+2025-03-28 12:17:48,166 INFO: Average time per tree: 4.97 seconds
+2025-03-28 12:17:48,168 INFO: Memory usage: 690.38 MB
+2025-03-28 12:17:48,168 INFO: Saving model to data\saved_models\random_forest_200_15_sqrt.joblib
+2025-03-28 12:17:48,222 INFO: Model saved successfully
+2025-03-28 12:17:48,222 WARNING: random_forest_200_15_sqrt training time: 994.53 seconds
+2025-03-28 12:17:48,222 INFO: Loading model from data\saved_models\random_forest_200_15_sqrt.joblib
+2025-03-28 12:17:48,305 INFO: Model loaded successfully
+2025-03-28 12:17:48,305 INFO: Making predictions...
+2025-03-28 12:17:55,441 INFO: Predictions completed in 7.14 seconds
+2025-03-28 12:18:05,774 INFO: Model Performance Metrics:
+2025-03-28 12:18:05,774 INFO: accuracy: 0.9982
+2025-03-28 12:18:05,775 INFO: precision: 0.9982
+2025-03-28 12:18:05,775 INFO: recall: 0.9982
+2025-03-28 12:18:05,775 INFO: f1: 0.9981
+2025-03-28 12:18:05,775 INFO: precision_macro: 0.9907
+2025-03-28 12:18:05,775 INFO: precision_micro: 0.9982
+2025-03-28 12:18:05,775 INFO: recall_macro: 0.8982
+2025-03-28 12:18:05,775 INFO: recall_micro: 0.9982
+2025-03-28 12:18:05,775 INFO: f1_macro: 0.9242
+2025-03-28 12:18:05,776 INFO: f1_micro: 0.9982
+2025-03-28 12:18:05,776 INFO: train_time: 994.5283
+2025-03-28 12:18:05,776 INFO: test_time: 7.1367
+2025-03-28 12:18:06,846 INFO: Confusion matrix saved to ./data/model_evaluation/random_forest_200_15_sqrt\confusion_matrix.png
+2025-03-28 12:18:10,274 INFO: 
+Detailed Performance Metrics by Attack Type:
+2025-03-28 12:18:10,285 INFO: 
+benign:
+2025-03-28 12:18:10,285 INFO:   Precision: 0.9987
+2025-03-28 12:18:10,285 INFO:   Recall: 0.9992
+2025-03-28 12:18:10,286 INFO:   F1-score: 0.9989
+2025-03-28 12:18:10,286 INFO:   Support: 454264
+2025-03-28 12:18:10,286 INFO: 
+botnet:
+2025-03-28 12:18:10,286 INFO:   Precision: 0.9580
+2025-03-28 12:18:10,287 INFO:   Recall: 0.3504
+2025-03-28 12:18:10,287 INFO:   F1-score: 0.5131
+2025-03-28 12:18:10,287 INFO:   Support: 391
+2025-03-28 12:18:10,287 INFO: 
+brute_force:
+2025-03-28 12:18:10,288 INFO:   Precision: 1.0000
+2025-03-28 12:18:10,288 INFO:   Recall: 0.9939
+2025-03-28 12:18:10,288 INFO:   F1-score: 0.9969
+2025-03-28 12:18:10,289 INFO:   Support: 2767
+2025-03-28 12:18:10,289 INFO: 
+ddos:
+2025-03-28 12:18:10,290 INFO:   Precision: 0.9999
+2025-03-28 12:18:10,290 INFO:   Recall: 0.9988
+2025-03-28 12:18:10,290 INFO:   F1-score: 0.9993
+2025-03-28 12:18:10,290 INFO:   Support: 25605
+2025-03-28 12:18:10,290 INFO: 
+dos:
+2025-03-28 12:18:10,291 INFO:   Precision: 0.9962
+2025-03-28 12:18:10,291 INFO:   Recall: 0.9947
+2025-03-28 12:18:10,291 INFO:   F1-score: 0.9954
+2025-03-28 12:18:10,292 INFO:   Support: 50343
+2025-03-28 12:18:10,292 INFO: 
+probe:
+2025-03-28 12:18:10,293 INFO:   Precision: 0.9938
+2025-03-28 12:18:10,293 INFO:   Recall: 0.9993
+2025-03-28 12:18:10,293 INFO:   F1-score: 0.9966
+2025-03-28 12:18:10,295 INFO:   Support: 31761
+2025-03-28 12:18:10,295 INFO: 
+web_attack:
+2025-03-28 12:18:10,295 INFO:   Precision: 0.9880
+2025-03-28 12:18:10,296 INFO:   Recall: 0.9513
+2025-03-28 12:18:10,296 INFO:   F1-score: 0.9693
+2025-03-28 12:18:10,296 INFO:   Support: 431
+2025-03-28 12:18:10,297 WARNING: random_forest_200_15_sqrt evaluation time: 22.08 seconds
