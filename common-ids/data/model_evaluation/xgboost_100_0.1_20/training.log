@@ -1,0 +1,82 @@
+2025-03-28 10:35:40,055 INFO: Loading preprocessed data from cache...
+2025-03-28 10:35:55,123 INFO: Cache file already exists.
+2025-03-28 10:35:55,123 WARNING: Preprocessing time: 15.07 seconds
+2025-03-28 10:35:55,123 INFO: Splitting data into training and testing sets...
+2025-03-28 10:36:05,501 INFO: Dropping 8 constant columns
+2025-03-28 10:36:05,769 INFO: Training set size: 2262246
+2025-03-28 10:36:05,769 INFO: Test set size: 565562
+2025-03-28 10:36:05,770 INFO: Remaining features: 70
+2025-03-28 10:36:07,133 WARNING: Normalization time: 12.01 seconds
+2025-03-28 10:36:07,134 INFO: Loading cached feature selection results...
+2025-03-28 10:36:16,462 INFO: Loading cached feature selection results...
+2025-03-28 10:36:24,481 WARNING: Feature selection time: 17.35 seconds
+2025-03-28 10:36:24,482 INFO: Training XGBoost model on 2262246 samples with 18 features...
+2025-03-28 10:36:24,483 INFO: Model parameters: {'objective': 'binary:logistic', 'base_score': None, 'booster': None, 'callbacks': None, 'colsample_bylevel': None, 'colsample_bynode': None, 'colsample_bytree': None, 'device': None, 'early_stopping_rounds': None, 'enable_categorical': False, 'eval_metric': None, 'feature_types': None, 'feature_weights': None, 'gamma': None, 'grow_policy': None, 'importance_type': None, 'interaction_constraints': None, 'learning_rate': 0.1, 'max_bin': None, 'max_cat_threshold': None, 'max_cat_to_onehot': None, 'max_delta_step': None, 'max_depth': 20, 'max_leaves': None, 'min_child_weight': None, 'missing': nan, 'monotone_constraints': None, 'multi_strategy': None, 'n_estimators': 100, 'n_jobs': 4, 'num_parallel_tree': None, 'random_state': 42, 'reg_alpha': None, 'reg_lambda': None, 'sampling_method': None, 'scale_pos_weight': None, 'subsample': None, 'tree_method': None, 'validate_parameters': None, 'verbosity': 1}
+2025-03-28 10:37:18,210 INFO: Training completed in 53.38 seconds
+2025-03-28 10:37:18,211 INFO: Memory usage: 310.67 MB
+2025-03-28 10:37:18,212 INFO: Saving model to data/saved_models/xgboost_100_0.1_20.joblib
+2025-03-28 10:37:18,234 INFO: Model saved successfully
+2025-03-28 10:37:18,234 WARNING: xgboost_100_0.1_20 training time: 53.73 seconds
+2025-03-28 10:37:18,234 INFO: Loading model from data/saved_models/xgboost_100_0.1_20.joblib
+2025-03-28 10:37:18,263 INFO: Model loaded successfully
+2025-03-28 10:37:18,263 INFO: Making predictions...
+2025-03-28 10:37:20,459 INFO: Predictions completed in 2.20 seconds
+2025-03-28 10:37:39,533 INFO: Model Performance Metrics:
+2025-03-28 10:37:39,534 INFO: accuracy: 0.9984
+2025-03-28 10:37:39,534 INFO: precision: 0.9982
+2025-03-28 10:37:39,534 INFO: recall: 0.9984
+2025-03-28 10:37:39,534 INFO: f1: 0.9982
+2025-03-28 10:37:39,534 INFO: precision_macro: 0.9489
+2025-03-28 10:37:39,534 INFO: precision_micro: 0.9984
+2025-03-28 10:37:39,534 INFO: recall_macro: 0.8459
+2025-03-28 10:37:39,534 INFO: recall_micro: 0.9984
+2025-03-28 10:37:39,534 INFO: f1_macro: 0.8745
+2025-03-28 10:37:39,534 INFO: f1_micro: 0.9984
+2025-03-28 10:37:39,534 INFO: train_time: 53.3789
+2025-03-28 10:37:39,534 INFO: test_time: 2.1951
+2025-03-28 10:37:41,582 INFO: Confusion matrix saved to ./data/model_evaluation/xgboost_100_0.1_20/confusion_matrix.png
+2025-03-28 10:37:47,722 INFO: 
+Detailed Performance Metrics by Attack Type:
+2025-03-28 10:37:47,740 INFO: 
+benign:
+2025-03-28 10:37:47,740 INFO:   Precision: 0.9988
+2025-03-28 10:37:47,740 INFO:   Recall: 0.9992
+2025-03-28 10:37:47,740 INFO:   F1-score: 0.9990
+2025-03-28 10:37:47,741 INFO:   Support: 454264
+2025-03-28 10:37:47,741 INFO: 
+botnet:
+2025-03-28 10:37:47,741 INFO:   Precision: 0.9279
+2025-03-28 10:37:47,741 INFO:   Recall: 0.7238
+2025-03-28 10:37:47,741 INFO:   F1-score: 0.8132
+2025-03-28 10:37:47,741 INFO:   Support: 391
+2025-03-28 10:37:47,741 INFO: 
+brute_force:
+2025-03-28 10:37:47,742 INFO:   Precision: 1.0000
+2025-03-28 10:37:47,742 INFO:   Recall: 0.9989
+2025-03-28 10:37:47,742 INFO:   F1-score: 0.9995
+2025-03-28 10:37:47,742 INFO:   Support: 2767
+2025-03-28 10:37:47,742 INFO: 
+ddos:
+2025-03-28 10:37:47,742 INFO:   Precision: 0.9996
+2025-03-28 10:37:47,742 INFO:   Recall: 0.9992
+2025-03-28 10:37:47,742 INFO:   F1-score: 0.9994
+2025-03-28 10:37:47,742 INFO:   Support: 25605
+2025-03-28 10:37:47,743 INFO: 
+dos:
+2025-03-28 10:37:47,743 INFO:   Precision: 0.9975
+2025-03-28 10:37:47,743 INFO:   Recall: 0.9989
+2025-03-28 10:37:47,743 INFO:   F1-score: 0.9982
+2025-03-28 10:37:47,743 INFO:   Support: 50343
+2025-03-28 10:37:47,743 INFO: 
+probe:
+2025-03-28 10:37:47,743 INFO:   Precision: 0.9937
+2025-03-28 10:37:47,743 INFO:   Recall: 0.9995
+2025-03-28 10:37:47,743 INFO:   F1-score: 0.9966
+2025-03-28 10:37:47,744 INFO:   Support: 31761
+2025-03-28 10:37:47,744 INFO: 
+web_attack:
+2025-03-28 10:37:47,744 INFO:   Precision: 0.7250
+2025-03-28 10:37:47,744 INFO:   Recall: 0.2019
+2025-03-28 10:37:47,744 INFO:   F1-score: 0.3158
+2025-03-28 10:37:47,744 INFO:   Support: 431
+2025-03-28 10:37:47,744 WARNING: xgboost_100_0.1_20 evaluation time: 29.51 seconds
