@@ -33,7 +33,7 @@ class GradientBoostingModel(BaseModel):
         # Wrap with OneVsRestClassifier for multi-class
         self.model = OneVsRestClassifier(
             base_classifier,
-            n_jobs=4  # Parallel processing
+            n_jobs=1  # Parallel processing
         )
 
     def train(self, X_train: pd.DataFrame, y_train: pd.Series) -> None:
