@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 from typing import Dict, Any
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support, confusion_matrix, classification_report
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, precision_recall_fscore_support, classification_report
 import joblib
 from pathlib import Path
 
@@ -49,11 +49,24 @@ class BaseModel(ABC):
             zero_division=1  # Explicitly set zero_division parameter
         )
 
+        precision_macro = precision_score(y_true, y_pred, average='macro')
+        precision_micro = precision_score(y_true, y_pred, average='micro')
+        recall_macro = recall_score(y_true, y_pred, average='macro')
+        recall_micro = recall_score(y_true, y_pred, average='micro')
+        f1_macro = f1_score(y_true, y_pred, average='macro')
+        f1_micro = f1_score(y_true, y_pred, average='micro')
+
         self.metrics = {
             'accuracy': accuracy,
             'precision': precision,
             'recall': recall,
             'f1': f1,
+            'precision_macro': precision_macro,
+            'precision_micro': precision_micro,
+            'recall_macro': recall_macro,
+            'recall_micro': recall_micro,
+            'f1_macro': f1_macro,
+            'f1_micro': f1_micro,
             'train_time': self.train_time,
             'test_time': self.test_time
         }

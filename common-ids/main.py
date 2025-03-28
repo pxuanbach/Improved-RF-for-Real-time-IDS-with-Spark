@@ -129,7 +129,7 @@ if __name__ == "__main__":
 
     #region MODEL TRAINING
     if train_type == TrainType.RANDOM_FOREST:
-        model = RandomForestModel(n_estimators=200, max_depth=15, max_features=None)
+        model = RandomForestModel(n_estimators=100, max_depth=20, max_features=None)
     elif train_type == TrainType.LOGISTIC_REGRESSION:
         model = LogisticRegressionModel(max_iter=15000, C=100, solver="sag")
     elif train_type == TrainType.XGBOOST:
@@ -149,7 +149,7 @@ if __name__ == "__main__":
         raise ValueError("Invalid train type")
 
     start_time = time.time()
-    model.train(train_df_selected, train_labels.Label)
+    model.train(train_df_selected, train_labels.Label_Category)  # Changed from Label to Label_Category
     end_time = time.time()
     model.save_model()
     logger.warning(f"{model.name} training time: {(end_time - start_time):.2f} seconds")
@@ -159,7 +159,7 @@ if __name__ == "__main__":
     start_time = time.time()
     model.load_model()
     predictions = model.predict(test_df_selected)
-    metrics = model.evaluate(test_labels.Label, predictions)
+    metrics = model.evaluate(test_labels.Label_Category, predictions)  # Changed from Label to Label_Category
     end_time = time.time()
     logger.warning(f"{model.name} evaluation time: {(end_time - start_time):.2f} seconds")
     #endregion
