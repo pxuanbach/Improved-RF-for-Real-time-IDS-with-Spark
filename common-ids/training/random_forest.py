@@ -7,13 +7,13 @@ from typing import Dict, Any, Literal, Optional
 from logger import logger
 from .base_model import BaseModel
 
-
 class RandomForestModel(BaseModel):
     def __init__(
         self,
-        n_estimators: int = 100,
+        n_estimators: int = 50,        # Giảm số lượng cây
         random_state: int = 42,
         max_features: float | Literal['sqrt', 'log2'] | None = 'sqrt',
+        criterion: Literal['gini', 'entropy', 'log_loss'] = "gini",
         max_depth: Optional[int] = None,
     ):
         super().__init__(f"random_forest_{n_estimators}_{max_depth}_{max_features}")
@@ -21,8 +21,12 @@ class RandomForestModel(BaseModel):
             n_estimators=n_estimators,
             max_depth=max_depth,  # Allow full depth
             max_features=max_features,
+            min_samples_split=10,      # Tăng số lượng mẫu tối thiểu để split
+            min_samples_leaf=5,        # Tăng số lượng mẫu tối thiểu ở leaf
+            bootstrap=True,
             random_state=random_state,
-            n_jobs=4,
+            criterion=criterion,
+            n_jobs=1,
             verbose=1
         )
 
