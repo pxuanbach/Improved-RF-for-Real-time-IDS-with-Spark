@@ -5,8 +5,8 @@ services:
       dockerfile: Dockerfile
     command: bin/spark-class org.apache.spark.deploy.master.Master
     ports:
-      - "8080:8080"  # Spark Master Web UI 
-      - "7077:7077" 
+      - "8080:8080"  # Spark Master Web UI
+      - "7077:7077"
     environment:
       - SPARK_MODE=master
       - SPARK_MASTER_HOST=spark-master
@@ -24,14 +24,16 @@ services:
     build:
       context: ./spark
       dockerfile: Dockerfile
-    command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    command: 
+      sh -c "bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077 &
+            bin/spark-class org.apache.spark.deploy.ExternalShuffleService"
     depends_on:
       - spark-master
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER=spark://spark-master:7077
       - SPARK_WORKER_MEMORY=4300m
-      - SPARK_WORKER_CORES=2   
+      - SPARK_WORKER_CORES=2
     deploy:
       resources:
         limits:
@@ -41,6 +43,9 @@ services:
       - "host.docker.internal:host-gateway"
     networks:
       - spark-network
+    volumes:
+      - ../improved-ids/data:/opt/spark-data
+    user: "0:0"  # Run as root to avoid permission issues
 
   minio:
     image: minio/minio:latest
@@ -48,6 +53,7 @@ services:
     ports:
       - "9000:9000"  # API port
       - "9090:9090"  # Console port
+
     environment:
       - MINIO_ROOT_USER=admin
       - MINIO_ROOT_PASSWORD=password
@@ -56,7 +62,12 @@ services:
       - ./minio/data:/data
     networks:
       - spark-network
-  
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+
   minio-mc:
     image: minio/mc
     depends_on:
@@ -75,6 +86,32 @@ services:
     networks:
       - spark-network
 
+  spark-driver:
+    build:
+      context: ./spark
+      dockerfile: Dockerfile
+    command: 
+      sh -c "tail -f /dev/null"
+    depends_on:
+      - spark-master
+      - spark-worker  # Đảm bảo worker đã khởi động
+    environment:
+      - SPARK_MODE=driver
+      - SPARK_MASTER=spark://spark-master:7077
+      - RABIT_TRACKER_IP=172.18.0.4  # Thêm để hỗ trợ XGBoost
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 6.2G
+    volumes:
+      - ../improved-ids:/opt/spark-data
+    networks:
+      - spark-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    user: "0:0"  # Run as root to avoid permission issues
+    
 networks:
   spark-network:
     driver: bridge
