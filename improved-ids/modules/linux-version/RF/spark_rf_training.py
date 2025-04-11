@@ -17,7 +17,6 @@ from pyspark.ml.feature import VectorAssembler
 from spark_utils import create_spark_session
 from model_utils import evaluate_model, bcolors
 from data_preprocessing import preprocess_data, create_label_index, reduce_dimensions, handle_nan_infinity, create_feature_vector, load_metadata
-from imblearn.over_sampling import SMOTE
 
 # Xử lý tham số dòng lệnh
 parser = argparse.ArgumentParser(description="Random Forest Training with Spark")
@@ -54,7 +53,9 @@ print(bcolors.OKCYAN + f"⏳ Spark session creation took {end_time - start_time:
 
 # Load dữ liệu đã giảm chiều
 start_time = time.time()
-reduced_data_path = "s3a://mybucket/preprocessed_data/reduced_data.parquet"
+
+# "https://mybucket1.hn.ss.bfcplatform.vn/preprocessed_data/reduced_data.parquet"
+reduced_data_path = "s3a://mybucket1/preprocessed_data/reduced_data.parquet"
 df_reduced = spark.read.parquet(reduced_data_path)
 print(bcolors.OKGREEN + f"✅ Loaded reduced data from {reduced_data_path}" + bcolors.ENDC)
 end_time = time.time()
@@ -72,29 +73,39 @@ end_time = time.time()
 execution_times["load_metadata"] = end_time - start_time
 print(bcolors.OKCYAN + f"⏳ Loading metadata took {end_time - start_time:.2f} seconds" + bcolors.ENDC)
 
-# Chọn lọc đặc trưng bổ sung bằng RFSelector
+# Chọn lọc đặc trưng bổ sung bằng RFSelector hoặc load từ S3
 start_time = time.time()
 df_resampled = df_reduced
-print(bcolors.OKCYAN + "⏳ Selecting top 18 features using RFSelector..." + bcolors.ENDC)
-rf_selector = RandomForestClassifier(
-    featuresCol="features",
-    labelCol="label",
-    numTrees=100,
-    maxDepth=20,
-    seed=42
-)
-rf_selector_model = rf_selector.fit(df_resampled)
-feature_importances = rf_selector_model.featureImportances
-importance_with_index = [(importance, index) for index, importance in enumerate(feature_importances)]
-importance_with_index.sort(reverse=True)
-selected_indices = [index for _, index in importance_with_index[:18]]
-selected_features = [global_top_features[i] for i in selected_indices]
-print(bcolors.OKGREEN + f"✅ Selected 18 features: {selected_features}" + bcolors.ENDC)
+selected_features_path = "s3a://mybucket1/models/selected_features_18.parquet"
+# https://mybucket1.hn.ss.bfcplatform.vn/models/selected_features_18.parquet/
+# Kiểm tra file selected features đã tồn tại chưa
+try:
+    selected_features_df = spark.read.parquet(selected_features_path)
+    selected_features = selected_features_df.first()["features"]
+    print(bcolors.OKGREEN + f"✅ Loaded existing selected features from {selected_features_path}" + bcolors.ENDC)
+    print(bcolors.OKGREEN + f"✅ Selected 18 features: {selected_features}" + bcolors.ENDC)
+except Exception as e:
+    print(bcolors.WARNING + f"⚠️  Failed to load existing selected features: {e}" + bcolors.ENDC)
+    print(bcolors.OKCYAN + "⏳ No existing features found. Selecting top 18 features using RFSelector..." + bcolors.ENDC)
 
-# Lưu danh sách 18 đặc trưng được chọn vào S3
-selected_features_path = "s3a://mybucket/models/selected_features_18.parquet"
-spark.createDataFrame([(selected_features,)], ["features"]).write.mode("overwrite").parquet(selected_features_path)
-print(bcolors.OKGREEN + f"✅ Saved selected features to {selected_features_path}" + bcolors.ENDC)
+    rf_selector = RandomForestClassifier(
+        featuresCol="features",
+        labelCol="label",
+        numTrees=100,
+        maxDepth=20,
+        seed=42
+    )
+    rf_selector_model = rf_selector.fit(df_resampled)
+    feature_importances = rf_selector_model.featureImportances
+    importance_with_index = [(importance, index) for index, importance in enumerate(feature_importances)]
+    importance_with_index.sort(reverse=True)
+    selected_indices = [index for _, index in importance_with_index[:18]]
+    selected_features = [global_top_features[i] for i in selected_indices]
+    print(bcolors.OKGREEN + f"✅ Selected 18 features: {selected_features}" + bcolors.ENDC)
+
+    # Lưu danh sách 18 đặc trưng được chọn vào S3
+    spark.createDataFrame([(selected_features,)], ["features"]).write.mode("overwrite").parquet(selected_features_path)
+    print(bcolors.OKGREEN + f"✅ Saved selected features to {selected_features_path}" + bcolors.ENDC)
 
 # Cập nhật Spark DataFrame để chỉ chứa 18 đặc trưng được chọn
 def extract_feature(vector, index):
@@ -145,7 +156,7 @@ print(bcolors.OKGREEN + f"✅ Training completed in {execution_times['training']
 
 # Lưu mô hình
 start_time = time.time()
-model_path = "s3a://mybucket/models/random_forest_model"
+model_path = "s3a://mybucket1/models/random_forest_model"
 rf_model.write().overwrite().save(model_path)
 print(bcolors.OKGREEN + f"✅ Model saved to {model_path}" + bcolors.ENDC)
 end_time = time.time()

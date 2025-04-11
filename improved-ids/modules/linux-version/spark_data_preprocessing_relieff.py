@@ -36,7 +36,7 @@ df = remove_unwanted_columns(df)
 
 # Get numeric columns
 exclude_cols = ['Label', 'Label_Category', 'Attack']
-feature_cols = [col_name for col_name in df.columns 
+feature_cols = [col_name for col_name in df.columns
                 if col_name not in exclude_cols and df.schema[col_name].dataType.typeName() in ('double', 'integer', 'float')]
 print(bcolors.OKBLUE + f"Selected {len(feature_cols)} numeric features: {feature_cols}" + bcolors.ENDC)
 
@@ -72,23 +72,27 @@ df_splits = df_vector.randomSplit(split_weights, seed=42)
 selector = ReliefFSelector().setSelectionThreshold(0.3).setNumNeighbors(10).setSampleSize(8)
 top_features_per_split = []
 total_time = 0.0
+
 for i, df_split in enumerate(df_splits):
+    if i == 1:
+        break
+
     start_time = time.time()
     total_instances = df_split.count()
     print(bcolors.HEADER + f"Processing split {i + 1}/{num_splits} with {total_instances} instances" + bcolors.ENDC)
-    
+
     model = selector.fit(df_split)
     weights = model.weights
     n_select = int(len(weights) * selector.getSelectionThreshold())
     selected_indices = np.argsort(weights)[-n_select:]
     selected_features = [feature_cols[idx] for idx in selected_indices]
     top_features_per_split.append((i, selected_features, weights[selected_indices]))
-    
+
     print(bcolors.OKGREEN + f"Split {i + 1}: Top {len(selected_features)} features: {selected_features}" + bcolors.ENDC)
     end_time = time.time()
     elapsed_time = end_time - start_time
     print(bcolors.OKCYAN + f"Elapsed time for split {i + 1}: {elapsed_time:.4f} seconds" + bcolors.ENDC)
-    
+
     df_split.unpersist(blocking=True)
     spark.sparkContext._jvm.System.gc()
     print(bcolors.OKCYAN + f"Released resources for split {i + 1}" + bcolors.ENDC)

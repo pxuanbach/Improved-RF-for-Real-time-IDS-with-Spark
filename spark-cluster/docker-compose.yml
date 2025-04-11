@@ -24,7 +24,7 @@ services:
     build:
       context: ./spark
       dockerfile: Dockerfile
-    command: 
+    command:
       sh -c "bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077 &
             bin/spark-class org.apache.spark.deploy.ExternalShuffleService"
     depends_on:
@@ -34,11 +34,12 @@ services:
       - SPARK_MASTER=spark://spark-master:7077
       - SPARK_WORKER_MEMORY=4300m
       - SPARK_WORKER_CORES=2
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
     deploy:
       resources:
         limits:
           cpus: '2.0'
-          memory: 4.2G
+          memory: 4.3G
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
@@ -90,7 +91,7 @@ services:
     build:
       context: ./spark
       dockerfile: Dockerfile
-    command: 
+    command:
       sh -c "tail -f /dev/null"
     depends_on:
       - spark-master
@@ -111,7 +112,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     user: "0:0"  # Run as root to avoid permission issues
-    
+
 networks:
   spark-network:
     driver: bridge

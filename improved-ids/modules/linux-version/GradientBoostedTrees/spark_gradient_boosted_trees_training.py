@@ -4,9 +4,9 @@ import argparse
 import time
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.metrics import confusion_matrix
+# import matplotlib.pyplot as plt
+# import seaborn as sns
+# from sklearn.metrics import confusion_matrix
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))  # Add parent directory
 
 from pyspark.sql import SparkSession
@@ -53,7 +53,7 @@ print(bcolors.OKCYAN + f"⏳ Spark session creation took {end_time - start_time:
 
 # Load reduced data
 start_time = time.time()
-reduced_data_path = "s3a://mybucket/preprocessed_data/reduced_data.parquet"
+reduced_data_path = "s3a://mybucket1/preprocessed_data/reduced_data.parquet"
 df_reduced = spark.read.parquet(reduced_data_path)
 print(bcolors.OKGREEN + f"✅ Loaded reduced data from {reduced_data_path}" + bcolors.ENDC)
 end_time = time.time()
@@ -74,26 +74,35 @@ print(bcolors.OKCYAN + f"⏳ Loading metadata took {end_time - start_time:.2f} s
 # Chọn lọc đặc trưng bổ sung bằng RFSelector
 start_time = time.time()
 df_resampled = df_reduced
-print(bcolors.OKCYAN + "⏳ Selecting top 18 features using RFSelector..." + bcolors.ENDC)
-rf_selector = RandomForestClassifier(
-    featuresCol="features",
-    labelCol="label",
-    numTrees=100,
-    maxDepth=20,
-    seed=42
-)
-rf_selector_model = rf_selector.fit(df_resampled)
-feature_importances = rf_selector_model.featureImportances
-importance_with_index = [(importance, index) for index, importance in enumerate(feature_importances)]
-importance_with_index.sort(reverse=True)
-selected_indices = [index for _, index in importance_with_index[:18]]
-selected_features = [global_top_features[i] for i in selected_indices]
-print(bcolors.OKGREEN + f"✅ Selected 18 features: {selected_features}" + bcolors.ENDC)
+selected_features_path = "s3a://mybucket1/models/selected_features_18.parquet"
+# https://mybucket111.hn.ss.bfcplatform.vn/models/selected_features_18.parquet/
+# Kiểm tra file selected features đã tồn tại chưa
+try:
+    selected_features_df = spark.read.parquet(selected_features_path)
+    selected_features = selected_features_df.first()["features"]
+    print(bcolors.OKGREEN + f"✅ Loaded existing selected features from {selected_features_path}" + bcolors.ENDC)
+    print(bcolors.OKGREEN + f"✅ Selected 18 features: {selected_features}" + bcolors.ENDC)
+except Exception as e:
+    print(bcolors.WARNING + f"⚠️  Failed to load existing selected features: {e}" + bcolors.ENDC)
+    print(bcolors.OKCYAN + "⏳ No existing features found. Selecting top 18 features using RFSelector..." + bcolors.ENDC)
+    rf_selector = RandomForestClassifier(
+        featuresCol="features",
+        labelCol="label",
+        numTrees=100,
+        maxDepth=20,
+        seed=42
+    )
+    rf_selector_model = rf_selector.fit(df_resampled)
+    feature_importances = rf_selector_model.featureImportances
+    importance_with_index = [(importance, index) for index, importance in enumerate(feature_importances)]
+    importance_with_index.sort(reverse=True)
+    selected_indices = [index for _, index in importance_with_index[:18]]
+    selected_features = [global_top_features[i] for i in selected_indices]
+    print(bcolors.OKGREEN + f"✅ Selected 18 features: {selected_features}" + bcolors.ENDC)
 
-# Lưu danh sách 18 đặc trưng được chọn vào S3
-selected_features_path = "s3a://mybucket/models/selected_features_18.parquet"
-spark.createDataFrame([(selected_features,)], ["features"]).write.mode("overwrite").parquet(selected_features_path)
-print(bcolors.OKGREEN + f"✅ Saved selected features to {selected_features_path}" + bcolors.ENDC)
+    # Lưu danh sách 18 đặc trưng được chọn vào S3
+    spark.createDataFrame([(selected_features,)], ["features"]).write.mode("overwrite").parquet(selected_features_path)
+    print(bcolors.OKGREEN + f"✅ Saved selected features to {selected_features_path}" + bcolors.ENDC)
 
 # Cập nhật Spark DataFrame để chỉ chứa 18 đặc trưng được chọn
 def extract_feature(vector, index):
@@ -144,7 +153,7 @@ print(bcolors.OKGREEN + f"✅ Training completed in {execution_times['training']
 
 # Save model
 start_time = time.time()
-model_path = "s3a://mybucket/models/gradient_boosted_trees_ovr_model"
+model_path = "s3a://mybucket1/models/gradient_boosted_trees_ovr_model"
 ovr_model.write().overwrite().save(model_path)
 print(bcolors.OKGREEN + f"✅ Model saved to {model_path}" + bcolors.ENDC)
 end_time = time.time()
@@ -172,41 +181,41 @@ execution_times["evaluation"] = end_time - start_time
 print(bcolors.OKCYAN + f"⏳ Model evaluation took {end_time - start_time:.2f} seconds" + bcolors.ENDC)
 
 # Compute and plot confusion matrix (in percentage)
-start_time = time.time()
-print(bcolors.OKCYAN + "⏳ Computing and plotting confusion matrix (in percentage)..." + bcolors.ENDC)
+# start_time = time.time()
+# print(bcolors.OKCYAN + "⏳ Computing and plotting confusion matrix (in percentage)..." + bcolors.ENDC)
 
-# Collect true and predicted labels
-y_true = predictions.select("label").rdd.flatMap(lambda x: x).collect()
-y_pred = predictions.select("prediction").rdd.flatMap(lambda x: x).collect()
+# # Collect true and predicted labels
+# y_true = predictions.select("label").rdd.flatMap(lambda x: x).collect()
+# y_pred = predictions.select("prediction").rdd.flatMap(lambda x: x).collect()
 
-# Compute confusion matrix
-cm = confusion_matrix(y_true, y_pred)
+# # Compute confusion matrix
+# cm = confusion_matrix(y_true, y_pred)
 
-# Normalize confusion matrix to percentages (by row)
-cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-cm_normalized = np.nan_to_num(cm_normalized)  # Replace NaN with 0 if any row has no samples
+# # Normalize confusion matrix to percentages (by row)
+# cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+# cm_normalized = np.nan_to_num(cm_normalized)  # Replace NaN with 0 if any row has no samples
 
-# Get labels sorted by index
-labels = [label_to_name[i] for i in sorted(label_to_name.keys())]
+# # Get labels sorted by index
+# labels = [label_to_name[i] for i in sorted(label_to_name.keys())]
 
-# Plot confusion matrix
-plt.figure(figsize=(12, 8))
-sns.heatmap(cm_normalized, annot=True, fmt='.2%', cmap='Blues', xticklabels=labels, yticklabels=labels)
-plt.title('Confusion Matrix (%)')
-plt.xlabel('Predicted Label')
-plt.ylabel('True Label')
-plt.xticks(rotation=45, ha="right")
-plt.yticks(rotation=0)
-plt.tight_layout()
+# # Plot confusion matrix
+# plt.figure(figsize=(12, 8))
+# sns.heatmap(cm_normalized, annot=True, fmt='.2%', cmap='Blues', xticklabels=labels, yticklabels=labels)
+# plt.title('Confusion Matrix (%)')
+# plt.xlabel('Predicted Label')
+# plt.ylabel('True Label')
+# plt.xticks(rotation=45, ha="right")
+# plt.yticks(rotation=0)
+# plt.tight_layout()
 
-# Save confusion matrix as image
-cm_path = os.path.join(output_dir, "confusion_matrix.png")
-plt.savefig(cm_path, dpi=300)
-plt.close()
-print(bcolors.OKGREEN + f"✅ Confusion matrix saved to {cm_path}" + bcolors.ENDC)
-end_time = time.time()
-execution_times["confusion_matrix"] = end_time - start_time
-print(bcolors.OKCYAN + f"⏳ Confusion matrix computation and plotting took {end_time - start_time:.2f} seconds" + bcolors.ENDC)
+# # Save confusion matrix as image
+# cm_path = os.path.join(output_dir, "confusion_matrix.png")
+# plt.savefig(cm_path, dpi=300)
+# plt.close()
+# print(bcolors.OKGREEN + f"✅ Confusion matrix saved to {cm_path}" + bcolors.ENDC)
+# end_time = time.time()
+# execution_times["confusion_matrix"] = end_time - start_time
+# print(bcolors.OKCYAN + f"⏳ Confusion matrix computation and plotting took {end_time - start_time:.2f} seconds" + bcolors.ENDC)
 
 # Save evaluation metrics to CSV
 start_time = time.time()
